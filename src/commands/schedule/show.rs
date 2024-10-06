@@ -1,71 +1,111 @@
 use std::collections::HashMap;
 
+use crate::{Context, Schedule, Slot, Subject};
 use clap::Args;
-
-use crate::{Handle, Index};
+use souvenir::Id;
 
 #[derive(Debug, Args)]
 pub struct ShowCommand {
-    schedule: Option<String>,
+    pub schedule: Option<String>,
 }
 
-pub fn evaluate(index: &mut Index, args: ShowCommand) {
-    let schedule = args
-        .schedule
-        .map(|hash| Handle::parse(&hash))
-        .unwrap_or(index.head.expect("no schedule to show"))
-        .resolve()
-        .expect("could not resolve schedule");
+pub async fn evaluate(ctx: &mut Context, args: ShowCommand) {
+    let mut tx = ctx
+        .db
+        .begin()
+        .await
+        .expect("could not begin database transaction");
 
-    let mut slots = Vec::from_iter(index.slots.iter().map(|s| *s));
-    slots.sort();
+    let schedule = if let Some(schedule) = args.schedule {
+        Schedule::resolve(Id::<Schedule>::parse(&schedule).unwrap(), &mut *tx).await
+    } else {
+        Schedule::fetch_current(&mut *tx).await
+    }
+    .expect("could not resolve schedule");
+
+    let slots: Vec<_> = sqlx::query!("SELECT * FROM slot ORDER BY w2m_id ASC;")
+        .fetch_all(&mut *tx)
+        .await
+        .expect("could not find slots")
+        .into_iter()
+        .filter_map(|record| record.w2m_id.map(|id| (record.id, id)))
+        .map(|record| Slot {
+            id: Id::from_i64(record.0),
+            w2m_id: record.1,
+        })
+        .collect();
+
+    tx.commit().await.unwrap();
 
     for (i, slot) in Iterator::enumerate(slots.into_iter()) {
-        let res = schedule.get_slot(slot);
+        let res = schedule
+            .get_slot(slot.id, &ctx.db)
+            .await
+            .expect("could not get slot");
 
         if i % 5 == 0 {
             println!();
         }
 
-        println!(
-            "{}, {}",
-            res[0].resolve().unwrap().name(),
-            res[1].resolve().unwrap().name()
-        );
+        let a = if res.len() > 0 {
+            Subject::resolve(res[0], &ctx.db).await.unwrap().name
+        } else {
+            "-".to_owned()
+        };
+
+        let b = if res.len() > 1 {
+            Subject::resolve(res[1], &ctx.db).await.unwrap().name
+        } else {
+            "-".to_owned()
+        };
+
+        println!("{}, {}", a, b);
     }
 
-    let mut subjects = vec![];
+    let subjects = Subject::all_subjects(&ctx.db)
+        .await
+        .expect("could not load subjects");
 
-    for &handle in index.subjects.iter() {
-        subjects.push((
-            handle.resolve().unwrap().name().to_owned(),
-            schedule.count_total(handle),
+    let mut double_counts = 0;
+    let mut totals = vec![];
+
+    let mut tx = ctx
+        .db
+        .begin()
+        .await
+        .expect("could not begin database transaction");
+
+    for subject in subjects.iter() {
+        if schedule.count(subject.id, &mut *tx).await.unwrap_or(0) > 1 {
+            double_counts += 1;
+        }
+
+        totals.push((
+            subject,
+            schedule
+                .count_total(subject.id, &mut *tx)
+                .await
+                .unwrap_or(0),
         ));
     }
 
+    tx.commit().await.unwrap();
+
     println!();
-    println!(
-        "double shifts: {}",
-        index
-            .subjects
-            .iter()
-            .map(|&s| schedule.count(s))
-            .filter(|&c| c > 1)
-            .count()
-    );
+    println!("double shifts: {}", double_counts);
 
     println!(
         "total shifts mean: {}",
-        mean(&subjects.iter().map(|x| x.1 as f64).collect::<Vec<f64>>()).unwrap_or(f64::NAN)
+        mean(&totals.iter().map(|x| x.1 as f64).collect::<Vec<f64>>()).unwrap_or(f64::NAN)
     );
     println!(
         "total shifts stddev: {}",
-        stddev(&subjects.iter().map(|x| x.1 as f64).collect::<Vec<f64>>()).unwrap_or(f64::NAN)
+        stddev(&totals.iter().map(|x| x.1 as f64).collect::<Vec<f64>>()).unwrap_or(f64::NAN)
     );
     println!(
         "total shifts stddev (non-zero): {}",
         stddev(
-            &subjects
+            &totals
                 .iter()
                 .filter(|x| x.1 != 0)
                 .map(|x| x.1 as f64)
@@ -78,15 +118,24 @@ pub fn evaluate(index: &mut Index, args: ShowCommand) {
 
     let mut order = HashMap::new();
 
-    for (sub, count) in subjects {
-        order.entry(count).or_insert(vec![]).push(sub);
+    for (sub, count) in totals {
+        order.entry(count).or_insert(vec![]).push(sub.name.clone());
     }
 
     let mut keys = Vec::from_iter(order.keys());
     keys.sort();
 
-    for k in keys {
-        println!("{}: {}", k, order[k].join(", "));
+    for &k in keys {
+        println!(
+            "{}: {}",
+            k,
+            order[&k]
+                .iter()
+                .filter(|s| k != 0 || !s.ends_with('*'))
+                .map(|s| s.as_ref())
+                .collect::<Vec<&str>>()
+                .join(", ")
+        );
     }
 }
 

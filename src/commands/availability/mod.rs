@@ -4,7 +4,7 @@ mod r#use;
 
 use clap::{Args, Subcommand};
 
-use crate::Index;
+use crate::Context;
 
 #[derive(Debug, Args)]
 #[command(about = "Manage subject availability")]
@@ -20,10 +20,10 @@ enum AvailabilitySubcommand {
     Show(show::ShowCommand),
 }
 
-pub fn evaluate(index: &mut Index, args: AvailabilityCommand) {
+pub async fn evaluate(index: &Context, args: AvailabilityCommand) {
     match args.command {
-        AvailabilitySubcommand::Use(args) => r#use::evaluate(index, args),
-        AvailabilitySubcommand::Fetch(args) => fetch::evaluate(index, args),
-        AvailabilitySubcommand::Show(args) => show::evaluate(index, args),
+        AvailabilitySubcommand::Use(args) => r#use::evaluate(index, args).await,
+        AvailabilitySubcommand::Fetch(args) => fetch::evaluate(index, args).await,
+        AvailabilitySubcommand::Show(args) => show::evaluate(index, args).await,
     }
 }

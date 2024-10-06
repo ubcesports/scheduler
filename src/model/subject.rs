@@ -1,43 +1,80 @@
-use std::io::Write;
+use souvenir::{Id, Identifiable};
+use sqlx::{Executor, Sqlite};
 
-use serde::{Deserialize, Serialize};
-
-use super::Referential;
-
-#[derive(Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Hash, PartialEq, Eq)]
 pub struct Subject {
-    id: u64,
-    name: String,
+    pub id: Id<Subject>,
+    pub w2m_id: i64,
+    pub name: String,
 }
 
 impl Subject {
-    pub fn new(id: u64, name: &str) -> Self {
+    pub fn new(id: Id<Subject>, w2m_id: i64, name: impl Into<String>) -> Self {
         Self {
             id,
-            name: name.to_string(),
+            w2m_id,
+            name: name.into(),
         }
     }
 
-    pub fn id(&self) -> u64 {
+    pub fn id(&self) -> Id<Subject> {
         self.id
     }
 
-    pub fn name(&self) -> &str {
-        &self.name
+    pub async fn upsert(
+        &mut self,
+        tx: impl Executor<'_, Database = Sqlite>,
+    ) -> Result<(), sqlx::Error> {
+        let id = self.id.as_i64();
+
+        let result = sqlx::query!(
+            "
+            INSERT INTO subject (id, w2m_id, name)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (w2m_id) DO UPDATE SET w2m_id = w2m_id
+                RETURNING id, w2m_id, name;
+            ",
+            id,
+            self.w2m_id,
+            self.name,
+        )
+        .fetch_one(tx)
+        .await?;
+
+        self.id = result.id.into();
+        result.w2m_id.map(|id| self.w2m_id = id);
+        self.name = result.name;
+
+        Ok(())
+    }
+
+    pub async fn all_subjects(
+        tx: impl Executor<'_, Database = Sqlite>,
+    ) -> Result<Vec<Subject>, sqlx::Error> {
+        Ok(sqlx::query!("SELECT * FROM subject;")
+            .fetch_all(tx)
+            .await?
+            .into_iter()
+            .map(|record| Subject::new(record.id.into(), record.w2m_id.unwrap(), record.name))
+            .collect())
+    }
+
+    pub async fn resolve(
+        id: Id<Subject>,
+        tx: impl Executor<'_, Database = Sqlite>,
+    ) -> Result<Subject, sqlx::Error> {
+        let qid = id.as_i64();
+
+        let data = sqlx::query!("SELECT * FROM subject WHERE id = $1 LIMIT 1;", qid)
+            .fetch_one(tx)
+            .await?;
+
+        Ok(Subject::new(id, data.w2m_id.unwrap(), data.name))
     }
 }
 
-impl Referential for Subject {
-    fn ref_name() -> &'static str {
-        &"subjects"
-    }
-
-    fn serialize(&self, mut writer: impl Write) {
-        let data = bitcode::serialize(&self).expect("could not serialize subject");
-        writer.write(&data).expect("could not write subject");
-    }
-
-    fn deserialize(data: &[u8]) -> Self {
-        bitcode::deserialize(&data).expect("could not deserialize subject")
+impl Identifiable for Subject {
+    fn prefix() -> &'static str {
+        "sj"
     }
 }

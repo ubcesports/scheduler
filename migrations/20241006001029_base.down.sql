@@ -1,0 +1,1 @@
+DROP TABLE schedule, schedule_assignment, subject, slot, availability, availability_entry, parameters;

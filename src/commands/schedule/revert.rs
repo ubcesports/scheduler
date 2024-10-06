@@ -1,21 +1,26 @@
+use crate::{Context, Schedule};
 use clap::Args;
-
-use crate::{Handle, Index, Schedule};
+use souvenir::Id;
 
 #[derive(Debug, Args)]
 pub struct RevertCommand {
     hash: String,
 }
 
-pub fn evaluate(index: &mut Index, args: RevertCommand) {
+pub async fn evaluate(ctx: &Context, args: RevertCommand) {
     if args.hash == "ROOT" {
-        index.head = None;
-        index.write();
+        sqlx::query!("UPDATE parameters SET schedule = NULL;")
+            .execute(&ctx.db)
+            .await
+            .expect("could not update schedule");
+
         return;
     }
 
-    let handle: Handle<Schedule> = Handle::parse(&args.hash);
+    let id = Id::<Schedule>::parse(&args.hash).unwrap().as_i64();
 
-    handle.resolve().expect("could not resolve handle");
-    index.head = Some(handle);
+    sqlx::query!("UPDATE parameters SET schedule = $1;", id)
+        .execute(&ctx.db)
+        .await
+        .expect("could not update schedule");
 }

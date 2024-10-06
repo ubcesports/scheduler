@@ -1,10 +1,10 @@
-mod export;
+// mod export;
 mod generate;
-mod import;
+// mod import;
 mod revert;
 mod show;
 
-use crate::Index;
+use crate::Context;
 use clap::{Args, Subcommand};
 
 #[derive(Debug, Args)]
@@ -18,17 +18,17 @@ pub struct ScheduleCommand {
 enum ScheduleSubcommand {
     Generate(generate::GenerateCommand),
     Show(show::ShowCommand),
-    Export(export::ExportCommand),
+    // Export(export::ExportCommand),
     Revert(revert::RevertCommand),
-    Import(import::ImportCommand),
+    // Import(import::ImportCommand),
 }
 
-pub fn evaluate(index: &mut Index, args: ScheduleCommand) {
+pub async fn evaluate(ctx: &mut Context, args: ScheduleCommand) {
     match args.command {
-        ScheduleSubcommand::Generate(args) => generate::evaluate(index, args),
-        ScheduleSubcommand::Show(args) => show::evaluate(index, args),
-        ScheduleSubcommand::Export(args) => export::evaluate(index, args),
-        ScheduleSubcommand::Revert(args) => revert::evaluate(index, args),
-        ScheduleSubcommand::Import(args) => import::evaluate(index, args),
+        ScheduleSubcommand::Generate(args) => generate::evaluate(ctx, args).await,
+        ScheduleSubcommand::Show(args) => show::evaluate(ctx, args).await,
+        // ScheduleSubcommand::Export(args) => export::evaluate(ctx, args).await,
+        ScheduleSubcommand::Revert(args) => revert::evaluate(ctx, args).await,
+        // ScheduleSubcommand::Import(args) => import::evaluate(ctx, args).await,
     }
 }

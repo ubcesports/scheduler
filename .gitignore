@@ -1,4 +1,6 @@
 /target
 *.sch
 .DS_Store
-
+.env
+.idea/
+*.db

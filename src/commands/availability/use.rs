@@ -1,15 +1,17 @@
-use crate::{Availability, Handle, Index};
+use crate::{Availability, Context};
 use clap::Args;
+use souvenir::Id;
 
 #[derive(Debug, Args)]
 pub struct UseCommand {
-    hash: String,
+    id: String,
 }
 
-pub fn evaluate(index: &mut Index, args: UseCommand) {
-    let handle: Handle<Availability> = Handle::parse(&args.hash);
+pub async fn evaluate(ctx: &Context, args: UseCommand) {
+    let id = Id::<Availability>::parse(&args.id).unwrap().as_i64();
 
-    let _ = handle.resolve().expect("could not resolve hash");
-
-    index.availability = Some(handle);
+    sqlx::query!("UPDATE parameters SET availability = $1;", id)
+        .execute(&ctx.db)
+        .await
+        .expect("could not set availability");
 }

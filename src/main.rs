@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
-use sch::{commands, Index};
+use sch::{commands, Context};
+use sqlx::SqlitePool;
 
 #[derive(Debug, Parser)]
 #[command(name = "sch", version)]
@@ -7,6 +8,9 @@ use sch::{commands, Index};
 struct Cli {
     #[command(subcommand)]
     command: Command,
+
+    #[arg(long)]
+    db: Option<String>,
 }
 
 #[derive(Debug, Subcommand)]
@@ -25,23 +29,30 @@ enum Command {
     Subjects(commands::subjects::SubjectsCommand),
 }
 
-fn main() {
+#[tokio::main]
+pub async fn main() {
     let args = Cli::parse();
 
     if let Command::Init(args) = args.command {
-        commands::init::evaluate(args);
+        commands::init::evaluate(args).await;
         return;
     }
 
-    let mut index = Index::load();
+    let db = SqlitePool::connect(&*args.db.unwrap_or("sched.db".to_owned()))
+        .await
+        .expect("could not connect to database");
+
+    sqlx::migrate!("./migrations")
+        .run(&db)
+        .await
+        .expect("could not run migrations");
+
+    let mut context = Context { db };
 
     match args.command {
-        Command::Availability(args) => commands::availability::evaluate(&mut index, args),
-        Command::Schedule(args) => commands::schedule::evaluate(&mut index, args),
-        Command::Subjects(args) => commands::subjects::evaluate(&mut index, args),
+        Command::Availability(args) => commands::availability::evaluate(&mut context, args).await,
+        Command::Schedule(args) => commands::schedule::evaluate(&mut context, args).await,
+        Command::Subjects(args) => commands::subjects::evaluate(&mut context, args).await,
         Command::Init(_) => unreachable!("already handled"),
     };
-
-    index.write();
-    println!("ok");
 }
