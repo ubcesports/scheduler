@@ -74,7 +74,5 @@ impl Subject {
 }
 
 impl Identifiable for Subject {
-    fn prefix() -> &'static str {
-        "sj"
-    }
+    const PREFIX: &'static str = "sj";
 }

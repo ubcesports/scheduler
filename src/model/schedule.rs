@@ -28,9 +28,7 @@ impl Slot {
 }
 
 impl Identifiable for Slot {
-    fn prefix() -> &'static str {
-        "sl"
-    }
+    const PREFIX: &'static str = "sl";
 }
 
 #[derive(Debug)]
@@ -230,7 +228,5 @@ impl Schedule {
 }
 
 impl Identifiable for Schedule {
-    fn prefix() -> &'static str {
-        "sh"
-    }
+    const PREFIX: &'static str = "sc";
 }

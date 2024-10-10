@@ -147,7 +147,5 @@ impl Availability {
 }
 
 impl Identifiable for Availability {
-    fn prefix() -> &'static str {
-        "av"
-    }
+    const PREFIX: &'static str = "av";
 }
