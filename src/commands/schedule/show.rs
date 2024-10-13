@@ -30,7 +30,7 @@ pub async fn evaluate(ctx: &mut Context, args: ShowCommand) {
         .into_iter()
         .filter_map(|record| record.w2m_id.map(|id| (record.id, id)))
         .map(|record| Slot {
-            id: Id::from_i64(record.0),
+            id: Id::from(record.0),
             w2m_id: record.1,
         })
         .collect();
@@ -48,13 +48,13 @@ pub async fn evaluate(ctx: &mut Context, args: ShowCommand) {
         }
 
         let a = if res.len() > 0 {
-            Subject::resolve(res[0], &ctx.db).await.unwrap().name
+            Subject::find(res[0], &ctx.db).await.unwrap().name
         } else {
             "-".to_owned()
         };
 
         let b = if res.len() > 1 {
-            Subject::resolve(res[1], &ctx.db).await.unwrap().name
+            Subject::find(res[1], &ctx.db).await.unwrap().name
         } else {
             "-".to_owned()
         };

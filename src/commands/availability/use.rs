@@ -8,7 +8,7 @@ pub struct UseCommand {
 }
 
 pub async fn evaluate(ctx: &Context, args: UseCommand) {
-    let id = Id::<Availability>::parse(&args.id).unwrap().as_i64();
+    let id = Id::<Availability>::parse(&args.id).unwrap();
 
     sqlx::query!("UPDATE parameters SET availability = $1;", id)
         .execute(&ctx.db)

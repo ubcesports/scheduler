@@ -1,7 +1,7 @@
 use crate::Subject;
 use futures::future::BoxFuture;
 use futures::FutureExt;
-use souvenir::{Id, Identifiable};
+use souvenir::{Id, Identifiable, Type};
 use sqlx::{Executor, Sqlite, SqliteConnection};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -27,14 +27,20 @@ impl Slot {
     }
 }
 
-impl Identifiable for Slot {
+impl Type for Slot {
     const PREFIX: &'static str = "sl";
+}
+
+impl Identifiable for Slot {
+    fn id(&self) -> Id<Self> {
+        self.id
+    }
 }
 
 #[derive(Debug)]
 pub struct Schedule {
-    id: Id<Schedule>,
-    parent: Option<Id<Schedule>>,
+    pub id: Id<Schedule>,
+    pub parent: Option<Id<Schedule>>,
 }
 
 impl Schedule {
@@ -47,15 +53,13 @@ impl Schedule {
     }
 
     pub async fn resolve(id: Id<Schedule>, tx: &mut SqliteConnection) -> Result<Self, sqlx::Error> {
-        let id = id.as_i64();
-
         let data = sqlx::query!("SELECT * FROM schedule WHERE id = $1;", id)
             .fetch_one(tx)
             .await?;
 
         Ok(Self::from(
-            Id::from_i64(data.id),
-            data.parent_id.map(|id| Id::from_i64(id)),
+            Id::from(data.id),
+            data.parent_id.map(|id| Id::from(id)),
         ))
     }
 
@@ -66,23 +70,19 @@ impl Schedule {
                 .await?;
 
         Ok(Self::from(
-            Id::from_i64(data.id),
-            data.parent_id.map(|id| Id::from_i64(id)),
+            Id::from(data.id),
+            data.parent_id.map(|id| Id::from(id)),
         ))
     }
 
     pub async fn upsert(&mut self, tx: &mut SqliteConnection) -> Result<(), sqlx::Error> {
-        let id = self.id.as_i64();
-
-        let parent = self.parent.as_ref().map(|v| v.as_i64());
-
         sqlx::query!(
             "
             INSERT INTO schedule (id, parent_id) VALUES ($1, $2)
                 ON CONFLICT DO UPDATE SET parent_id = $2;
             ",
-            id,
-            parent
+            self.id,
+            self.parent
         )
         .execute(tx)
         .await?;
@@ -90,28 +90,19 @@ impl Schedule {
         Ok(())
     }
 
-    pub fn id(&self) -> Id<Schedule> {
-        self.id
-    }
-
-    pub fn parent(&self) -> Option<Id<Schedule>> {
-        self.parent
-    }
-
     pub async fn count(
         &self,
-        subject: Id<Subject>,
+        subject: impl Into<Id<Subject>>,
         tx: &mut SqliteConnection,
     ) -> Result<u64, sqlx::Error> {
-        let id = self.id.as_i64();
-        let subject_id = subject.as_i64();
+        let subject_id = subject.into();
 
         Ok(sqlx::query!(
             "
             SELECT COUNT(*) AS count FROM schedule_assignment
                 WHERE schedule_id = $1 AND subject_id = $2;
             ",
-            id,
+            self.id,
             subject_id,
         )
         .fetch_one(tx)
@@ -121,7 +112,7 @@ impl Schedule {
 
     pub async fn count_total(
         &self,
-        subject: Id<Subject>,
+        subject: impl Into<Id<Subject>>,
         tx: &mut SqliteConnection,
     ) -> Result<u64, sqlx::Error> {
         fn count_total<'a>(
@@ -144,12 +135,12 @@ impl Schedule {
             .boxed()
         }
 
-        count_total(self, subject, tx).await
+        count_total(self, subject.into(), tx).await
     }
 
     pub async fn last_scheduled(
         &self,
-        subject: Id<Subject>,
+        subject: impl Into<Id<Subject>>,
         tx: &mut SqliteConnection,
     ) -> Result<Option<u64>, sqlx::Error> {
         fn last_scheduled<'a>(
@@ -175,27 +166,26 @@ impl Schedule {
             .boxed()
         }
 
-        last_scheduled(self, subject, tx).await
+        last_scheduled(self, subject.into(), tx).await
     }
 
     pub async fn add(
         &self,
-        slot: Id<Slot>,
-        subject: Id<Subject>,
+        slot: impl Into<Id<Slot>>,
+        subject: impl Into<Id<Subject>>,
         tx: impl Executor<'_, Database = Sqlite>,
     ) -> Result<(), sqlx::Error> {
-        let id = self.id.as_i64();
-        let subject_id = subject.as_i64();
-        let slot_id = slot.as_i64();
+        let slot_id = slot.into();
+        let subject_id = subject.into();
 
         sqlx::query!(
             "
             INSERT INTO schedule_assignment (schedule_id, subject_id, slot_id)
                 VALUES ($1, $2, $3);
             ",
-            id,
+            self.id,
             subject_id,
-            slot_id
+            slot_id,
         )
         .execute(tx)
         .await?;
@@ -205,28 +195,33 @@ impl Schedule {
 
     pub async fn get_slot(
         &self,
-        slot: Id<Slot>,
+        slot: impl Into<Id<Slot>>,
         tx: impl Executor<'_, Database = Sqlite>,
     ) -> Result<Vec<Id<Subject>>, sqlx::Error> {
-        let id = self.id.as_i64();
-        let slot_id = slot.as_i64();
+        let slot_id = slot.into();
 
         Ok(sqlx::query!(
             "
             SELECT subject_id FROM schedule_assignment
                 WHERE schedule_id = $1 AND slot_id = $2;
             ",
-            id,
-            slot_id
+            self.id,
+            slot_id,
         )
         .fetch_all(tx)
         .await?
         .into_iter()
-        .map(|record| Id::from_i64(record.subject_id))
+        .map(|record| Id::from(record.subject_id))
         .collect())
     }
 }
 
-impl Identifiable for Schedule {
+impl Type for Schedule {
     const PREFIX: &'static str = "sc";
+}
+
+impl Identifiable for Schedule {
+    fn id(&self) -> Id<Self> {
+        self.id
+    }
 }

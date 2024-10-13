@@ -20,7 +20,7 @@ pub async fn evaluate(ctx: &mut Context, _args: GenerateCommand) {
         .expect("could not fetch availability");
 
     let parent = Schedule::fetch_current(&mut *tx).await.ok();
-    let mut schedule = Schedule::new(parent.map(|schedule| schedule.id()));
+    let mut schedule = Schedule::new(parent.map(|schedule| schedule.id));
 
     schedule
         .upsert(&mut *tx)
@@ -56,9 +56,7 @@ pub async fn evaluate(ctx: &mut Context, _args: GenerateCommand) {
             .expect("could not add schedule entry");
     }
 
-    let schedule_id = schedule.id().as_i64();
-
-    sqlx::query!("UPDATE parameters SET schedule = $1;", schedule_id)
+    sqlx::query!("UPDATE parameters SET schedule = $1;", schedule.id)
         .execute(&mut *tx)
         .await
         .expect("could not update schedule");
@@ -71,13 +69,19 @@ pub async fn evaluate(ctx: &mut Context, _args: GenerateCommand) {
 async fn weight(
     schedule: &Schedule,
     availability: &Availability,
-    subject: Id<Subject>,
+    subject: impl Into<Id<Subject>>,
     tx: &mut SqliteConnection,
 ) -> Result<f64, sqlx::Error> {
-    let weeks_since = schedule.last_scheduled(subject, tx).await?.unwrap_or(100) as f64 - 1.0;
-    let flexibility = availability.for_subject(subject, tx).await?.len() as f64;
-    let total_shifted = schedule.count_total(subject, tx).await? as f64;
-    let shifts_current = schedule.count(subject, tx).await? as f64;
+    let subject_id = subject.into();
+
+    let weeks_since = schedule
+        .last_scheduled(subject_id, tx)
+        .await?
+        .unwrap_or(100) as f64
+        - 1.0;
+    let flexibility = availability.for_subject(subject_id, tx).await?.len() as f64;
+    let total_shifted = schedule.count_total(subject_id, tx).await? as f64;
+    let shifts_current = schedule.count(subject_id, tx).await? as f64;
 
     Ok(1.0 + 2.0 * weeks_since
         - flexibility / 20.0

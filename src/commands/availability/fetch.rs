@@ -42,8 +42,6 @@ pub async fn evaluate(ctx: &Context, args: FetchCommand) {
         .await
         .expect("could not add availability");
 
-    let availability_id = availability.id().as_i64();
-
     // get all time slots, add to database, and map slot number to slot
     let slot_regex = Regex::new(r"TimeOfSlot\[(\d+)]=(\d+)").unwrap();
     let mut slots = HashMap::new();
@@ -61,14 +59,11 @@ pub async fn evaluate(ctx: &Context, args: FetchCommand) {
     let mut people = HashMap::new();
 
     for (_, [name, id]) in person_regex.captures_iter(&body).map(|c| c.extract()) {
-        let mut subject = Subject::new(Id::random(), id.parse::<i64>().unwrap(), name);
-
-        subject
-            .upsert(&mut *tx)
+        let subject = Subject::upsert(Id::random(), id.parse::<i64>().ok(), name, &mut *tx)
             .await
             .expect("could not add subject");
 
-        people.insert(subject.w2m_id, subject);
+        people.insert(subject.w2m_id.unwrap(), subject);
     }
 
     // add availability entries
@@ -117,14 +112,11 @@ pub async fn evaluate(ctx: &Context, args: FetchCommand) {
                 Slot::from_sql_row(result.id, result.w2m_id.unwrap())
             };
 
-            let slot_id = slot.id.as_i64();
-            let subject_id = subject.id.as_i64();
-
             sqlx::query!(
                 "INSERT INTO availability_entry (availability_id, slot_id, subject_id) VALUES ($1, $2, $3);",
-                availability_id,
-                slot_id,
-                subject_id,
+                availability.id,
+                slot.id,
+                subject.id,
             )
             .execute(&mut *tx)
             .await
@@ -132,7 +124,7 @@ pub async fn evaluate(ctx: &Context, args: FetchCommand) {
         }
     }
 
-    sqlx::query!("UPDATE parameters SET availability = $1;", availability_id)
+    sqlx::query!("UPDATE parameters SET availability = $1;", availability.id)
         .execute(&mut *tx)
         .await
         .expect("could not update availability");

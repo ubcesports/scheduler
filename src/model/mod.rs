@@ -1,7 +1,4 @@
 mod availability;
-mod handle;
-mod index;
-mod referential;
 mod schedule;
 mod subject;
 

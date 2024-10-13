@@ -17,7 +17,7 @@ pub async fn evaluate(ctx: &Context, args: RevertCommand) {
         return;
     }
 
-    let id = Id::<Schedule>::parse(&args.hash).unwrap().as_i64();
+    let id = Id::<Schedule>::parse(&args.hash).unwrap();
 
     sqlx::query!("UPDATE parameters SET schedule = $1;", id)
         .execute(&ctx.db)

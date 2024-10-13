@@ -1,33 +1,38 @@
-use souvenir::{Id, Identifiable};
+use souvenir::{Id, Identifiable, Type};
 use sqlx::{Executor, Sqlite};
 
 #[derive(Debug, Hash, PartialEq, Eq)]
 pub struct Subject {
     pub id: Id<Subject>,
-    pub w2m_id: i64,
+    pub w2m_id: Option<i64>,
     pub name: String,
 }
 
 impl Subject {
-    pub fn new(id: Id<Subject>, w2m_id: i64, name: impl Into<String>) -> Self {
-        Self {
-            id,
-            w2m_id,
-            name: name.into(),
-        }
-    }
+    pub async fn find(
+        id: Id<Subject>,
+        tx: impl Executor<'_, Database = Sqlite>,
+    ) -> Result<Self, sqlx::Error> {
+        let data = sqlx::query!("SELECT * FROM subject WHERE id = $1 LIMIT 1;", id)
+            .fetch_one(tx)
+            .await?;
 
-    pub fn id(&self) -> Id<Subject> {
-        self.id
+        Ok(Subject {
+            id,
+            w2m_id: data.w2m_id,
+            name: data.name,
+        })
     }
 
     pub async fn upsert(
-        &mut self,
+        id: Id<Subject>,
+        w2m_id: Option<i64>,
+        name: impl Into<String>,
         tx: impl Executor<'_, Database = Sqlite>,
-    ) -> Result<(), sqlx::Error> {
-        let id = self.id.as_i64();
+    ) -> Result<Self, sqlx::Error> {
+        let name_str = name.into();
 
-        let result = sqlx::query!(
+        sqlx::query!(
             "
             INSERT INTO subject (id, w2m_id, name)
                 VALUES ($1, $2, $3)
@@ -35,44 +40,40 @@ impl Subject {
                 RETURNING id, w2m_id, name;
             ",
             id,
-            self.w2m_id,
-            self.name,
+            w2m_id,
+            name_str,
         )
         .fetch_one(tx)
-        .await?;
-
-        self.id = result.id.into();
-        result.w2m_id.map(|id| self.w2m_id = id);
-        self.name = result.name;
-
-        Ok(())
+        .await
+        .map(|result| Self {
+            id: result.id.into(),
+            w2m_id: result.w2m_id,
+            name: result.name,
+        })
     }
 
     pub async fn all_subjects(
         tx: impl Executor<'_, Database = Sqlite>,
-    ) -> Result<Vec<Subject>, sqlx::Error> {
+    ) -> Result<Vec<Self>, sqlx::Error> {
         Ok(sqlx::query!("SELECT * FROM subject;")
             .fetch_all(tx)
             .await?
             .into_iter()
-            .map(|record| Subject::new(record.id.into(), record.w2m_id.unwrap(), record.name))
+            .map(|record| Subject {
+                id: record.id.into(),
+                w2m_id: record.w2m_id,
+                name: record.name,
+            })
             .collect())
-    }
-
-    pub async fn resolve(
-        id: Id<Subject>,
-        tx: impl Executor<'_, Database = Sqlite>,
-    ) -> Result<Subject, sqlx::Error> {
-        let qid = id.as_i64();
-
-        let data = sqlx::query!("SELECT * FROM subject WHERE id = $1 LIMIT 1;", qid)
-            .fetch_one(tx)
-            .await?;
-
-        Ok(Subject::new(id, data.w2m_id.unwrap(), data.name))
     }
 }
 
-impl Identifiable for Subject {
+impl Type for Subject {
     const PREFIX: &'static str = "sj";
+}
+
+impl Identifiable for Subject {
+    fn id(&self) -> Id<Self> {
+        self.id
+    }
 }
