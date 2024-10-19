@@ -15,15 +15,29 @@ impl Slot {
         Self { id, w2m_id }
     }
 
-    pub fn from_sql_row(id: i64, w2m_id: i64) -> Self {
+    pub fn from_sql_row(id: String, w2m_id: i64) -> Self {
         Self {
-            id: id.into(),
+            id: id.parse().unwrap(),
             w2m_id,
         }
     }
 
-    pub fn to_sql_row(&self) -> (i64, i64) {
-        (self.id.into(), self.w2m_id)
+    pub fn to_sql_row(&self) -> (String, i64) {
+        (self.id.to_string(), self.w2m_id)
+    }
+
+    pub async fn all_slots(
+        tx: impl Executor<'_, Database = Sqlite>,
+    ) -> Result<Vec<Self>, sqlx::Error> {
+        Ok(sqlx::query!("SELECT * FROM slot ORDER BY w2m_id;")
+            .fetch_all(tx)
+            .await?
+            .into_iter()
+            .map(|record| Self {
+                id: record.id.parse().unwrap(),
+                w2m_id: record.w2m_id.unwrap(),
+            })
+            .collect())
     }
 }
 
@@ -32,6 +46,8 @@ impl Type for Slot {
 }
 
 impl Identifiable for Slot {
+    type Output = Slot;
+
     fn id(&self) -> Id<Self> {
         self.id
     }
@@ -58,8 +74,8 @@ impl Schedule {
             .await?;
 
         Ok(Self::from(
-            Id::from(data.id),
-            data.parent_id.map(|id| Id::from(id)),
+            Id::parse(&data.id).unwrap(),
+            data.parent_id.map(|id| Id::parse(&id).unwrap()),
         ))
     }
 
@@ -70,8 +86,8 @@ impl Schedule {
                 .await?;
 
         Ok(Self::from(
-            Id::from(data.id),
-            data.parent_id.map(|id| Id::from(id)),
+            Id::parse(&data.id).unwrap(),
+            data.parent_id.map(|id| Id::parse(&id).unwrap()),
         ))
     }
 
@@ -211,7 +227,7 @@ impl Schedule {
         .fetch_all(tx)
         .await?
         .into_iter()
-        .map(|record| Id::from(record.subject_id))
+        .map(|record| Id::parse(&record.subject_id).unwrap())
         .collect())
     }
 }
@@ -221,6 +237,8 @@ impl Type for Schedule {
 }
 
 impl Identifiable for Schedule {
+    type Output = Schedule;
+
     fn id(&self) -> Id<Self> {
         self.id
     }

@@ -30,12 +30,14 @@ pub async fn evaluate(ctx: &mut Context, args: ShowCommand) {
         .into_iter()
         .filter_map(|record| record.w2m_id.map(|id| (record.id, id)))
         .map(|record| Slot {
-            id: Id::from(record.0),
+            id: Id::parse(&record.0).unwrap(),
             w2m_id: record.1,
         })
         .collect();
 
     tx.commit().await.unwrap();
+
+    println!("{}", schedule.id);
 
     for (i, slot) in Iterator::enumerate(slots.into_iter()) {
         let res = schedule

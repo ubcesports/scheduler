@@ -37,7 +37,7 @@ impl Availability {
         .fetch_one(tx)
         .await?;
 
-        Ok(Self::new(Id::from(data.id)))
+        Ok(Self::new(Id::parse(&data.id).unwrap()))
     }
 
     pub async fn insert(
@@ -82,7 +82,7 @@ impl Availability {
         .fetch_all(tx)
         .await?
         .into_iter()
-        .map(|record| Id::from(record.subject_id))
+        .map(|record| Id::parse(&record.subject_id).unwrap())
         .collect())
     }
 
@@ -104,7 +104,7 @@ impl Availability {
         .fetch_all(tx)
         .await?
         .into_iter()
-        .map(|record| Id::from(record.slot_id))
+        .map(|record| Id::parse(&record.slot_id).unwrap())
         .collect())
     }
 
@@ -123,8 +123,8 @@ impl Availability {
         .into_iter()
         .map(|record| {
             (
-                Id::<Slot>::from(record.slot_id),
-                Id::<Subject>::from(record.subject_id),
+                Id::<Slot>::parse(&record.slot_id).unwrap(),
+                Id::<Subject>::parse(&record.subject_id).unwrap(),
             )
         })
         .for_each(|(slot, subject)| map.entry(slot).or_default().push(subject));
@@ -140,6 +140,8 @@ impl Type for Availability {
 }
 
 impl Identifiable for Availability {
+    type Output = Availability;
+
     fn id(&self) -> Id<Self> {
         self.id
     }

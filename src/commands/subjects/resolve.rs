@@ -1,6 +1,5 @@
-use crate::{Context, Subject};
+use crate::Context;
 use clap::Args;
-use souvenir::Id;
 
 #[derive(Debug, Args)]
 pub struct ResolveCommand {
@@ -22,11 +21,6 @@ pub async fn evaluate(ctx: &Context, args: ResolveCommand) {
     }
 
     for record in query.into_iter() {
-        println!(
-            "{:<22}{:<16}\t{:+}",
-            record.name,
-            Id::<Subject>::from(record.id),
-            record.id
-        );
+        println!("{:<22}{:<16}", record.name, record.id);
     }
 }

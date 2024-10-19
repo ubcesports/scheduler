@@ -1608,9 +1608,9 @@ dependencies = [
 
 [[package]]
 name = "souvenir"
-version = "0.2.7"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77d34f5319a531a2d5a07d4eb8091f0c17db1124428d21da7c26d57eee2f841e"
+checksum = "9886759fdb5e971abd3066e8dee3950bd261a8960ca834616fe43933f17f120f"
 dependencies = [
  "rand",
  "serde",

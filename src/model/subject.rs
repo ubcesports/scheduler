@@ -46,7 +46,7 @@ impl Subject {
         .fetch_one(tx)
         .await
         .map(|result| Self {
-            id: result.id.into(),
+            id: result.id.parse().unwrap(),
             w2m_id: result.w2m_id,
             name: result.name,
         })
@@ -60,7 +60,7 @@ impl Subject {
             .await?
             .into_iter()
             .map(|record| Subject {
-                id: record.id.into(),
+                id: record.id.parse().unwrap(),
                 w2m_id: record.w2m_id,
                 name: record.name,
             })
@@ -73,6 +73,8 @@ impl Type for Subject {
 }
 
 impl Identifiable for Subject {
+    type Output = Subject;
+
     fn id(&self) -> Id<Self> {
         self.id
     }

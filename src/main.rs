@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 use sch::{commands, Context};
-use sqlx::SqlitePool;
+use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
 
 #[derive(Debug, Parser)]
 #[command(name = "sch", version)]
@@ -27,6 +27,9 @@ enum Command {
 
     #[command(arg_required_else_help = true)]
     Subjects(commands::subjects::SubjectsCommand),
+
+    #[command()]
+    Migrate(commands::migrate::MigrateCommand),
 }
 
 #[tokio::main]
@@ -38,9 +41,16 @@ pub async fn main() {
         return;
     }
 
-    let db = SqlitePool::connect(&*args.db.unwrap_or("sched.db".to_owned()))
-        .await
-        .expect("could not connect to database");
+    let db = SqlitePool::connect_with(
+        SqliteConnectOptions::new()
+            .filename(&*args.db.unwrap_or("sched.db".to_owned()))
+            .foreign_keys(match args.command {
+                Command::Migrate(_) => false,
+                _ => true,
+            }),
+    )
+    .await
+    .expect("could not connect to database");
 
     sqlx::migrate!("./migrations")
         .run(&db)
@@ -53,6 +63,7 @@ pub async fn main() {
         Command::Availability(args) => commands::availability::evaluate(&mut context, args).await,
         Command::Schedule(args) => commands::schedule::evaluate(&mut context, args).await,
         Command::Subjects(args) => commands::subjects::evaluate(&mut context, args).await,
+        Command::Migrate(args) => commands::migrate::evaluate(&mut context, args).await,
         Command::Init(_) => unreachable!("already handled"),
     };
 }
