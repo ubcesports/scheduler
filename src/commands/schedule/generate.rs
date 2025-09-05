@@ -83,5 +83,6 @@ async fn weight(
     let total_shifted = schedule.count_total(subject_id, tx).await? as f64;
     let shifts_current = schedule.count(subject_id, tx).await? as f64;
 
-    Ok(weeks_since - flexibility / 20.0 - total_shifted / 5.0 - (1.0 + shifts_current).powi(3))
+    Ok(weeks_since - flexibility / 20.0 - total_shifted / 5.0 - (2.0 + shifts_current).powi(3))
 }
+
