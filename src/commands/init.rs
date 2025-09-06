@@ -1,8 +1,7 @@
 use std::{env, path::PathBuf};
 
 use clap::Args;
-use sqlx::sqlite::SqliteConnectOptions;
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 
 #[derive(Debug, Args)]
 #[command(about = "Initialize a new project")]
@@ -25,11 +24,7 @@ pub async fn evaluate(args: InitCommand) {
         return;
     }
 
-    SqlitePool::connect_with(
-        SqliteConnectOptions::new()
-            .filename(path)
-            .create_if_missing(true),
-    )
-    .await
-    .expect("could not create new database");
+    PgPool::connect(path.to_str().unwrap())
+        .await
+        .expect("could not create new database");
 }

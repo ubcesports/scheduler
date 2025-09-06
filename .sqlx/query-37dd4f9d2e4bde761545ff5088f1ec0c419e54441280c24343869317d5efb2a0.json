@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                    INSERT INTO availability_entry (availability_id, slot_id, subject_id) \n                        VALUES ($1, $2, $3);\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "37dd4f9d2e4bde761545ff5088f1ec0c419e54441280c24343869317d5efb2a0"
+}

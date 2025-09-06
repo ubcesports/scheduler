@@ -3,8 +3,16 @@ mod model;
 
 pub use model::*;
 
-use sqlx::{Pool, Sqlite};
+use sqlx::{Acquire, PgPool, Postgres};
 
 pub struct Context {
-    pub db: Pool<Sqlite>,
+    pub db: PgPool,
 }
+
+pub trait Tx<'a>
+where
+    Self: Acquire<'a, Database = Postgres>,
+{
+}
+
+impl<'a, T: Acquire<'a, Database = Postgres>> Tx<'a> for T {}

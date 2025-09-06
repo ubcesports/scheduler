@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO availability (id) VALUES ($1);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5bcc2590d796707533f2a56c682950348f5e3ea723129711c90688a1d2610cf8"
+}

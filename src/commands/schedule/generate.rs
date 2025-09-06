@@ -1,8 +1,8 @@
 use crate::commands::schedule::show::ShowCommand;
-use crate::{Availability, Context, Schedule, Subject};
+use crate::{Availability, Context, Schedule};
 use clap::Args;
-use souvenir::Id;
-use sqlx::SqliteConnection;
+use souvenir::{Id, Identifiable};
+use sqlx::PgConnection;
 use std::collections::HashMap;
 
 #[derive(Debug, Args)]
@@ -56,7 +56,7 @@ pub async fn evaluate(ctx: &mut Context, _args: GenerateCommand) {
             .expect("could not add schedule entry");
     }
 
-    sqlx::query!("UPDATE parameters SET schedule = $1;", schedule.id)
+    sqlx::query!("UPDATE parameters SET schedule = $1;", schedule.id as Id)
         .execute(&mut *tx)
         .await
         .expect("could not update schedule");
@@ -69,20 +69,19 @@ pub async fn evaluate(ctx: &mut Context, _args: GenerateCommand) {
 async fn weight(
     schedule: &Schedule,
     availability: &Availability,
-    subject: impl Into<Id<Subject>>,
-    tx: &mut SqliteConnection,
-) -> Result<f64, sqlx::Error> {
-    let subject_id = subject.into();
+    subject: impl Identifiable,
+    tx: &mut PgConnection,
+) -> anyhow::Result<f64> {
+    let subject_id = subject.id();
 
     let weeks_since = schedule
-        .last_scheduled(subject_id, tx)
+        .last_scheduled(subject_id, &mut *tx)
         .await?
         .unwrap_or(100) as f64
         - 1.0;
-    let flexibility = availability.for_subject(subject_id, tx).await?.len() as f64;
-    let total_shifted = schedule.count_total(subject_id, tx).await? as f64;
-    let shifts_current = schedule.count(subject_id, tx).await? as f64;
+    let flexibility = availability.for_subject(subject_id, &mut *tx).await?.len() as f64;
+    let total_shifted = schedule.count_total(subject_id, &mut *tx).await? as f64;
+    let shifts_current = schedule.count(subject_id, &mut *tx).await? as f64;
 
     Ok(weeks_since - flexibility / 20.0 - total_shifted / 5.0 - (2.0 + shifts_current).powi(3))
 }
-

@@ -1,0 +1,36 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                INSERT INTO subject (id, w2m_id, name)\n                    VALUES ($1, $2, $3)\n                    ON CONFLICT (w2m_id) DO UPDATE SET w2m_id = $2\n                    RETURNING id AS \"id: Id\", w2m_id, name;\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: Id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "w2m_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "1064d43267a5a7d6712910032719e229d0ec1311a3459d01fa5447d3d5dba961"
+}

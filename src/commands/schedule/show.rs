@@ -17,23 +17,24 @@ pub async fn evaluate(ctx: &mut Context, args: ShowCommand) {
         .expect("could not begin database transaction");
 
     let schedule = if let Some(schedule) = args.schedule {
-        Schedule::resolve(Id::<Schedule>::parse(&schedule).unwrap(), &mut *tx).await
+        Schedule::resolve(Id::parse(&schedule).unwrap(), &mut *tx).await
     } else {
         Schedule::fetch_current(&mut *tx).await
     }
     .expect("could not resolve schedule");
 
-    let slots: Vec<_> = sqlx::query!("SELECT * FROM slot ORDER BY w2m_id ASC;")
-        .fetch_all(&mut *tx)
-        .await
-        .expect("could not find slots")
-        .into_iter()
-        .filter_map(|record| record.w2m_id.map(|id| (record.id, id)))
-        .map(|record| Slot {
-            id: Id::parse(&record.0).unwrap(),
-            w2m_id: record.1,
-        })
-        .collect();
+    let slots: Vec<_> =
+        sqlx::query!(r#"SELECT id AS "id: Id", w2m_id FROM slot ORDER BY w2m_id ASC;"#)
+            .fetch_all(&mut *tx)
+            .await
+            .expect("could not find slots")
+            .into_iter()
+            .filter_map(|record| record.w2m_id.map(|id| (record.id, id)))
+            .map(|record| Slot {
+                id: record.0,
+                w2m_id: record.1,
+            })
+            .collect();
 
     tx.commit().await.unwrap();
 
