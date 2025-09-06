@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                        INSERT INTO slot (id, w2m_id)\n                            VALUES ($1, $2)\n                            ON CONFLICT (w2m_id) DO UPDATE SET w2m_id = $2\n                            RETURNING id AS \"id: Id\", w2m_id;\n                    ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: Id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "w2m_id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "b9ccfc5615470bd1315f2e95c469c0cfcdbfe0d37e73c66049aaac85d9b6f6a9"
+}

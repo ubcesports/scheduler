@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT subject_id AS \"subject: Id\" FROM schedule_assignment\n                WHERE schedule_id = $1 AND slot_id = $2;\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "subject: Id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "ff7ec48b119faeaa5c7c960fb5b6f4b60a6b64e7b994abc73205875931d5dd73"
+}

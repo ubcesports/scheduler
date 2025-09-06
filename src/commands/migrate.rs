@@ -2,9 +2,8 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use clap::Args;
-use souvenir::{Id, Type};
-use sqlx::sqlite::SqliteConnectOptions;
-use sqlx::{query, query_as, SqlitePool};
+use souvenir::{id, Id, Tagged};
+use sqlx::{query, query_as, PgPool};
 
 use crate::{Availability, Context, Schedule, Slot, Subject};
 
@@ -43,7 +42,6 @@ struct OldSlot {
 #[derive(sqlx::FromRow)]
 struct OldAvailability {
     id: i64,
-    created_at: String,
 }
 
 #[derive(sqlx::FromRow)]
@@ -54,23 +52,19 @@ struct OldAvailabilityEntry {
 }
 
 pub async fn evaluate(ctx: &Context, args: MigrateCommand) {
-    let source = SqlitePool::connect_with(
-        SqliteConnectOptions::new()
-            .filename(args.source)
-            .create_if_missing(false),
-    )
-    .await
-    .expect("could not connect to source database");
+    let source = PgPool::connect(args.source.to_str().unwrap())
+        .await
+        .expect("could not connect to source database");
 
     let mut tx = ctx.db.begin().await.expect("could not begin transaction");
 
-    let mut schedule_map: HashMap<i64, Id<Schedule>> = HashMap::new();
-    let mut slot_map: HashMap<i64, Id<Slot>> = HashMap::new();
-    let mut subject_map: HashMap<i64, Id<Subject>> = HashMap::new();
-    let mut availability_map: HashMap<i64, Id<Availability>> = HashMap::new();
+    let mut schedule_map: HashMap<i64, Id> = HashMap::new();
+    let mut slot_map: HashMap<i64, Id> = HashMap::new();
+    let mut subject_map: HashMap<i64, Id> = HashMap::new();
+    let mut availability_map: HashMap<i64, Id> = HashMap::new();
 
-    fn get_id<T: Type>(value: i64, map: &mut HashMap<i64, Id<T>>) -> Id<T> {
-        *map.entry(value).or_insert(Id::random())
+    fn get_id<T: Tagged>(value: i64, map: &mut HashMap<i64, Id>) -> Id {
+        *map.entry(value).or_insert(id!(T))
     }
 
     let schedules = query_as::<_, OldSchedule>("SELECT * from schedule;")
@@ -79,16 +73,16 @@ pub async fn evaluate(ctx: &Context, args: MigrateCommand) {
         .expect("could not fetch schedules");
 
     for schedule in schedules {
-        let id = get_id(schedule.id, &mut schedule_map);
+        let id = get_id::<Schedule>(schedule.id, &mut schedule_map);
 
         let parent = schedule
             .parent_id
-            .map(|value| get_id(value, &mut schedule_map));
+            .map(|value| get_id::<Schedule>(value, &mut schedule_map));
 
         query!(
-            "INSERT INTO schedule (id, parent_id) VALUES (?, ?);",
-            id,
-            parent
+            "INSERT INTO schedule (id, parent_id) VALUES ($1, $2);",
+            id as Id,
+            parent as Option<Id>,
         )
         .execute(&mut *tx)
         .await
@@ -102,15 +96,15 @@ pub async fn evaluate(ctx: &Context, args: MigrateCommand) {
             .expect("could not fetch schedule assignments");
 
     for assignment in schedule_assginments {
-        let schedule_id = get_id(assignment.schedule_id, &mut schedule_map);
-        let slot_id = get_id(assignment.slot_id, &mut slot_map);
-        let subject_id = get_id(assignment.subject_id, &mut subject_map);
+        let schedule_id = get_id::<Schedule>(assignment.schedule_id, &mut schedule_map);
+        let slot_id = get_id::<Slot>(assignment.slot_id, &mut slot_map);
+        let subject_id = get_id::<Subject>(assignment.subject_id, &mut subject_map);
 
         query!(
-            "INSERT INTO schedule_assignment (schedule_id, slot_id, subject_id) VALUES (?, ?, ?);",
-            schedule_id,
-            slot_id,
-            subject_id
+            "INSERT INTO schedule_assignment (schedule_id, slot_id, subject_id) VALUES ($1, $2, $3);",
+            schedule_id as Id,
+            slot_id as Id,
+            subject_id as Id,
         )
         .execute(&mut *tx)
         .await
@@ -123,11 +117,11 @@ pub async fn evaluate(ctx: &Context, args: MigrateCommand) {
         .expect("could not could not fetch subjects");
 
     for subject in subjects {
-        let id = get_id(subject.id, &mut subject_map);
+        let id = get_id::<Subject>(subject.id, &mut subject_map);
 
         query!(
-            "INSERT INTO subject (id, w2m_id, name) VALUES (?, ?, ?);",
-            id,
+            "INSERT INTO subject (id, w2m_id, name) VALUES ($1, $2, $3);",
+            id as Id,
             subject.w2m_id,
             subject.name,
         )
@@ -142,11 +136,11 @@ pub async fn evaluate(ctx: &Context, args: MigrateCommand) {
         .expect("could not fetch slots");
 
     for slot in slots {
-        let id = get_id(slot.id, &mut slot_map);
+        let id = get_id::<Slot>(slot.id, &mut slot_map);
 
         query!(
-            "INSERT INTO slot (id, w2m_id) VALUES (?, ?);",
-            id,
+            "INSERT INTO slot (id, w2m_id) VALUES ($1, $2);",
+            id as Id,
             slot.w2m_id,
         )
         .execute(&mut *tx)
@@ -160,16 +154,12 @@ pub async fn evaluate(ctx: &Context, args: MigrateCommand) {
         .expect("could not fetch availabilities");
 
     for availability in availabilities {
-        let id = get_id(availability.id, &mut availability_map);
+        let id = get_id::<Availability>(availability.id, &mut availability_map);
 
-        query!(
-            "INSERT INTO availability (id, created_at) VALUES (?, ?);",
-            id,
-            availability.created_at,
-        )
-        .execute(&mut *tx)
-        .await
-        .expect("could not insert into schedule");
+        query!("INSERT INTO availability (id) VALUES ($1);", id as Id)
+            .execute(&mut *tx)
+            .await
+            .expect("could not insert into schedule");
     }
 
     let availability_entries =
@@ -179,15 +169,18 @@ pub async fn evaluate(ctx: &Context, args: MigrateCommand) {
             .expect("could not fetch availability entries");
 
     for entry in availability_entries {
-        let availability_id = get_id(entry.availability_id, &mut availability_map);
-        let slot_id = get_id(entry.slot_id, &mut slot_map);
-        let subject_id = get_id(entry.subject_id, &mut subject_map);
+        let availability_id = get_id::<Availability>(entry.availability_id, &mut availability_map);
+        let slot_id = get_id::<Slot>(entry.slot_id, &mut slot_map);
+        let subject_id = get_id::<Subject>(entry.subject_id, &mut subject_map);
 
         query!(
-            "INSERT INTO availability_entry (availability_id, slot_id, subject_id) VALUES (?, ?, ?);",
-            availability_id,
-            slot_id,
-            subject_id
+            "
+                INSERT INTO availability_entry (availability_id, slot_id, subject_id) 
+                    VALUES ($1, $2, $3);
+            ",
+            availability_id as Id,
+            slot_id as Id,
+            subject_id as Id
         )
         .execute(&mut *tx)
         .await
@@ -200,13 +193,13 @@ pub async fn evaluate(ctx: &Context, args: MigrateCommand) {
             .await
             .expect("could not fetch parameters");
 
-    let availability_id = get_id(availability, &mut availability_map);
-    let schedule_id = get_id(schedule, &mut schedule_map);
+    let availability_id = get_id::<Availability>(availability, &mut availability_map);
+    let schedule_id = get_id::<Schedule>(schedule, &mut schedule_map);
 
     query!(
-        "UPDATE parameters SET availability = ?, schedule = ?",
-        availability_id,
-        schedule_id
+        "UPDATE parameters SET availability = $1, schedule = $2",
+        availability_id as Id,
+        schedule_id as Id
     )
     .execute(&mut *tx)
     .await

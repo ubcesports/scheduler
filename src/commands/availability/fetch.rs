@@ -1,7 +1,7 @@
 use crate::{Availability, Context, Slot, Subject};
 use clap::{Args, ValueEnum};
 use regex::Regex;
-use souvenir::Id;
+use souvenir::{id, Id};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Args)]
@@ -36,7 +36,7 @@ pub async fn evaluate(ctx: &Context, args: FetchCommand) {
         .expect("could not begin database transaction");
 
     // create a new availability object
-    let mut availability = Availability::new(Id::random());
+    let mut availability = Availability::new(id!(Availability));
     availability
         .upsert(&mut *tx)
         .await
@@ -59,7 +59,7 @@ pub async fn evaluate(ctx: &Context, args: FetchCommand) {
     let mut people = HashMap::new();
 
     for (_, [name, id]) in person_regex.captures_iter(&body).map(|c| c.extract()) {
-        let subject = Subject::upsert(Id::random(), id.parse::<i64>().ok(), name, &mut *tx)
+        let subject = Subject::upsert(id!(Subject), id.parse::<i32>().ok(), name, &mut *tx)
             .await
             .expect("could not add subject");
 
@@ -94,29 +94,32 @@ pub async fn evaluate(ctx: &Context, args: FetchCommand) {
             }
 
             let slot = {
-                let row = Slot::new(Id::random(), *slots.get(&slot).unwrap()).to_sql_row();
+                let data = Slot::new(id!(Slot), *slots.get(&slot).unwrap() as i32);
                 let result = sqlx::query!(
-                    "
-                    INSERT INTO slot (id, w2m_id)
-                        VALUES ($1, $2)
-                        ON CONFLICT (w2m_id) DO UPDATE SET w2m_id = w2m_id
-                        RETURNING id, w2m_id;
-                    ",
-                    row.0,
-                    row.1,
+                    r#"
+                        INSERT INTO slot (id, w2m_id)
+                            VALUES ($1, $2)
+                            ON CONFLICT (w2m_id) DO UPDATE SET w2m_id = $2
+                            RETURNING id AS "id: Id", w2m_id;
+                    "#,
+                    data.id as Id,
+                    data.w2m_id,
                 )
                 .fetch_one(&mut *tx)
                 .await
                 .expect("could not add slot");
 
-                Slot::from_sql_row(result.id, result.w2m_id.unwrap())
+                Slot::new(result.id, result.w2m_id.unwrap())
             };
 
             sqlx::query!(
-                "INSERT INTO availability_entry (availability_id, slot_id, subject_id) VALUES ($1, $2, $3);",
-                availability.id,
-                slot.id,
-                subject.id,
+                "
+                    INSERT INTO availability_entry (availability_id, slot_id, subject_id) 
+                        VALUES ($1, $2, $3);
+                ",
+                availability.id as Id,
+                slot.id as Id,
+                subject.id as Id,
             )
             .execute(&mut *tx)
             .await
@@ -124,10 +127,13 @@ pub async fn evaluate(ctx: &Context, args: FetchCommand) {
         }
     }
 
-    sqlx::query!("UPDATE parameters SET availability = $1;", availability.id)
-        .execute(&mut *tx)
-        .await
-        .expect("could not update availability");
+    sqlx::query!(
+        "UPDATE parameters SET availability = $1;",
+        availability.id as Id
+    )
+    .execute(&mut *tx)
+    .await
+    .expect("could not update availability");
 
     tx.commit()
         .await

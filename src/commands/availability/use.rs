@@ -1,4 +1,4 @@
-use crate::{Availability, Context};
+use crate::Context;
 use clap::Args;
 use souvenir::Id;
 
@@ -8,9 +8,9 @@ pub struct UseCommand {
 }
 
 pub async fn evaluate(ctx: &Context, args: UseCommand) {
-    let id = Id::<Availability>::parse(&args.id).unwrap();
+    let id = Id::parse(&args.id).unwrap();
 
-    sqlx::query!("UPDATE parameters SET availability = $1;", id)
+    sqlx::query!("UPDATE parameters SET availability = $1;", id as Id)
         .execute(&ctx.db)
         .await
         .expect("could not set availability");

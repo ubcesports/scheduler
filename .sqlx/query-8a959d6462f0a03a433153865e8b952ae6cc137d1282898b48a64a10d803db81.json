@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                SELECT COUNT(*) AS count FROM schedule_assignment\n                    WHERE schedule_id = $1 AND subject_id = $2;\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "8a959d6462f0a03a433153865e8b952ae6cc137d1282898b48a64a10d803db81"
+}

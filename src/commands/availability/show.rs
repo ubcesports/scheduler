@@ -8,23 +8,23 @@ pub struct ShowCommand;
 pub async fn evaluate(ctx: &Context, _args: ShowCommand) {
     let query = sqlx::query!(
         "
-        SELECT slot.w2m_id, subject.name FROM availability_entry
-            LEFT JOIN slot ON slot_id = slot.id
-            LEFT JOIN subject ON subject_id = subject.id
-            WHERE availability_id = (SELECT availability FROM parameters);
+            SELECT slot.w2m_id, subject.name FROM availability_entry
+                LEFT JOIN slot ON slot_id = slot.id
+                LEFT JOIN subject ON subject_id = subject.id
+                WHERE availability_id = (SELECT availability FROM parameters);
         "
     )
     .fetch_all(&ctx.db)
     .await
     .expect("could not resolve availability");
 
-    let mut slots: Vec<i64> = HashSet::<i64>::from_iter(query.iter().filter_map(|r| r.w2m_id))
+    let mut slots: Vec<i32> = HashSet::<i32>::from_iter(query.iter().filter_map(|r| r.w2m_id))
         .into_iter()
         .collect();
 
     slots.sort();
 
-    let mut map: HashMap<i64, Vec<String>> = HashMap::new();
+    let mut map: HashMap<i32, Vec<String>> = HashMap::new();
 
     query
         .into_iter()

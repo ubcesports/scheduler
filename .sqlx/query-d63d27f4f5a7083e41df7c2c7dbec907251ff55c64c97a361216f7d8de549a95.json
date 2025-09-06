@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                SELECT slot_id AS \"slot: Id\", subject_id AS \"subject: Id\"\n                    FROM availability_entry \n                    WHERE availability_id = $1;\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "slot: Id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "subject: Id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "d63d27f4f5a7083e41df7c2c7dbec907251ff55c64c97a361216f7d8de549a95"
+}

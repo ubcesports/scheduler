@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 use sch::{commands, Context};
-use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
+use sqlx::PgPool;
 
 #[derive(Debug, Parser)]
 #[command(name = "sch", version)]
@@ -10,7 +10,7 @@ struct Cli {
     command: Command,
 
     #[arg(long)]
-    db: Option<String>,
+    db: String,
 }
 
 #[derive(Debug, Subcommand)]
@@ -41,16 +41,7 @@ pub async fn main() {
         return;
     }
 
-    let db = SqlitePool::connect_with(
-        SqliteConnectOptions::new()
-            .filename(&*args.db.unwrap_or("sched.db".to_owned()))
-            .foreign_keys(match args.command {
-                Command::Migrate(_) => false,
-                _ => true,
-            }),
-    )
-    .await
-    .expect("could not connect to database");
+    let db = PgPool::connect(&args.db).await.unwrap();
 
     sqlx::migrate!("./migrations")
         .run(&db)

@@ -1,4 +1,4 @@
-use crate::{Context, Schedule};
+use crate::Context;
 use clap::Args;
 use souvenir::Id;
 
@@ -17,9 +17,9 @@ pub async fn evaluate(ctx: &Context, args: RevertCommand) {
         return;
     }
 
-    let id = Id::<Schedule>::parse(&args.hash).unwrap();
+    let id = Id::parse(&args.hash).unwrap();
 
-    sqlx::query!("UPDATE parameters SET schedule = $1;", id)
+    sqlx::query!("UPDATE parameters SET schedule = $1;", id as Id)
         .execute(&ctx.db)
         .await
         .expect("could not update schedule");

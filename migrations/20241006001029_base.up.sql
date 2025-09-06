@@ -1,58 +1,54 @@
 CREATE TABLE schedule
 (
-    id        TEXT PRIMARY KEY NOT NULL,
-    parent_id TEXT REFERENCES schedule (id) DEFAULT NULL
-);
-
-CREATE TABLE schedule_assignment
-(
-    schedule_id TEXT REFERENCES schedule (id) NOT NULL,
-    slot_id     TEXT REFERENCES slot (id)     NOT NULL,
-    subject_id  TEXT REFERENCES subject (id)  NOT NULL,
-
-    PRIMARY KEY (schedule_id, slot_id, subject_id)
+    id        UUID PRIMARY KEY NOT NULL,
+    parent_id UUID REFERENCES schedule (id) DEFAULT NULL
 );
 
 CREATE TABLE subject
 (
-    id     TEXT PRIMARY KEY NOT NULL,
-    w2m_id INT UNIQUE DEFAULT NULL,
+    id     UUID    PRIMARY KEY NOT NULL,
+    w2m_id INTEGER UNIQUE DEFAULT NULL,
 
-    name   TEXT               NOT NULL
+    name   TEXT NOT NULL
 );
 
 CREATE TABLE slot
 (
-    id     TEXT PRIMARY KEY NOT NULL,
-    w2m_id INT UNIQUE DEFAULT NULL
+    id     UUID PRIMARY KEY NOT NULL,
+    w2m_id INT  UNIQUE DEFAULT NULL
+);
+
+CREATE TABLE schedule_assignment
+(
+    schedule_id UUID REFERENCES schedule (id) NOT NULL,
+    slot_id     UUID REFERENCES slot (id)     NOT NULL,
+    subject_id  UUID REFERENCES subject (id)  NOT NULL,
+
+    PRIMARY KEY (schedule_id, slot_id, subject_id)
 );
 
 CREATE TABLE availability
 (
-    id         TEXT PRIMARY KEY NOT NULL,
-    created_at INTEGER DEFAULT CURRENT_TIMESTAMP
+    id         UUID        PRIMARY KEY NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
 CREATE TABLE availability_entry
 (
-    availability_id TEXT REFERENCES availability (id) NOT NULL,
-    slot_id         TEXT REFERENCES slot (id)         NOT NULL,
-    subject_id      TEXT REFERENCES subject (id)      NOT NULL,
+    availability_id UUID REFERENCES availability (id) NOT NULL,
+    slot_id         UUID REFERENCES slot (id)         NOT NULL,
+    subject_id      UUID REFERENCES subject (id)      NOT NULL,
 
     PRIMARY KEY (availability_id, slot_id, subject_id)
 );
 
 CREATE TABLE parameters
 (
-    lock         INT PRIMARY KEY NOT NULL,
+    lock         INTEGER PRIMARY KEY GENERATED ALWAYS AS (1) STORED UNIQUE,
+    version      INTEGER DEFAULT 1,
 
-    version      INT,
+    availability UUID REFERENCES availability (id),
+    schedule     UUID REFERENCES schedule (id),
 
-    availability TEXT REFERENCES availability (id),
-    schedule     TEXT REFERENCES schedule (id),
-
-    CONSTRAINT parameters_lock CHECK ( lock == 1 )
+    CONSTRAINT parameters_lock CHECK (lock = 1)
 );
-
-INSERT INTO parameters (lock, version)
-    VALUES (1, 1);

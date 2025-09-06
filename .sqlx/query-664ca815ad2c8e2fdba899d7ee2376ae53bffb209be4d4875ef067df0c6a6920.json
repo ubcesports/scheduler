@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                INSERT INTO schedule_assignment (schedule_id, subject_id, slot_id)\n                    VALUES ($1, $2, $3);\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "664ca815ad2c8e2fdba899d7ee2376ae53bffb209be4d4875ef067df0c6a6920"
+}

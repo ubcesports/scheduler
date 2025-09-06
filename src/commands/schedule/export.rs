@@ -17,7 +17,7 @@ pub async fn evaluate(ctx: &Context, args: ExportCommand) {
         .expect("could not begin database transaction");
 
     let schedule = if let Some(schedule) = args.schedule {
-        Schedule::resolve(Id::<Schedule>::parse(&schedule).unwrap(), &mut *tx).await
+        Schedule::resolve(Id::parse(&schedule).unwrap(), &mut *tx).await
     } else {
         Schedule::fetch_current(&mut *tx).await
     }
