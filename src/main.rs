@@ -29,7 +29,7 @@ pub async fn main() -> anyhow::Result<()> {
     ));
 
     let router = create_router(ApplicationData { config, pool });
-    let listener = TcpListener::bind(addr).await.unwrap();
+    let listener = TcpListener::bind(addr).await?;
 
     info!("listening on {addr}");
 
