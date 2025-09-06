@@ -1,60 +1,38 @@
-use clap::{Parser, Subcommand};
-use sch::{commands, Context};
-use sqlx::PgPool;
+use std::{
+    net::{IpAddr, SocketAddr},
+    str::FromStr,
+};
 
-#[derive(Debug, Parser)]
-#[command(name = "sch", version)]
-#[command(about = "Shift scheduling utility", long_about = None)]
-struct Cli {
-    #[command(subcommand)]
-    command: Command,
-
-    #[arg(long)]
-    db: String,
-}
-
-#[derive(Debug, Subcommand)]
-#[command(name = "subcommand")]
-enum Command {
-    #[command()]
-    Init(commands::init::InitCommand),
-
-    #[command(arg_required_else_help = true)]
-    Schedule(commands::schedule::ScheduleCommand),
-
-    #[command(arg_required_else_help = true)]
-    Availability(commands::availability::AvailabilityCommand),
-
-    #[command(arg_required_else_help = true)]
-    Subjects(commands::subjects::SubjectsCommand),
-
-    #[command()]
-    Migrate(commands::migrate::MigrateCommand),
-}
+use scheduler::{create_router, ApplicationData, Config};
+use sqlx::postgres::PgPoolOptions;
+use tokio::net::TcpListener;
+use tracing::info;
 
 #[tokio::main]
-pub async fn main() {
-    let args = Cli::parse();
+pub async fn main() -> anyhow::Result<()> {
+    let config = Config::read()?;
 
-    if let Command::Init(args) = args.command {
-        commands::init::evaluate(args).await;
-        return;
-    }
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .init();
 
-    let db = PgPool::connect(&args.db).await.unwrap();
+    let pool = PgPoolOptions::new()
+        .max_connections(config.database.max_connections)
+        .connect(&config.database.url)
+        .await?;
 
-    sqlx::migrate!("./migrations")
-        .run(&db)
-        .await
-        .expect("could not run migrations");
+    sqlx::migrate!("./migrations").run(&pool).await?;
 
-    let mut context = Context { db };
+    let addr = SocketAddr::from((
+        IpAddr::from_str(&config.http.listen.address)?,
+        config.http.listen.port,
+    ));
 
-    match args.command {
-        Command::Availability(args) => commands::availability::evaluate(&mut context, args).await,
-        Command::Schedule(args) => commands::schedule::evaluate(&mut context, args).await,
-        Command::Subjects(args) => commands::subjects::evaluate(&mut context, args).await,
-        Command::Migrate(args) => commands::migrate::evaluate(&mut context, args).await,
-        Command::Init(_) => unreachable!("already handled"),
-    };
+    let router = create_router(ApplicationData { config, pool });
+    let listener = TcpListener::bind(addr).await.unwrap();
+
+    info!("listening on {addr}");
+
+    axum::serve(listener, router).await?;
+    Ok(())
 }
