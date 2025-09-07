@@ -5,6 +5,8 @@ use sqlx::PgPool;
 
 use crate::Config;
 
+mod health;
+
 #[derive(Clone)]
 pub struct Application(Arc<ApplicationData>);
 
@@ -28,5 +30,7 @@ pub struct ApplicationData {
 }
 
 pub fn create_router(app: ApplicationData) -> Router {
-    Router::new().with_state(Application::new(app))
+    Router::new()
+        .merge(health::create_router())
+        .with_state(Application::new(app))
 }

@@ -1,5 +1,5 @@
 use config::{Environment, File};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 pub use app::*;
 pub use database::*;
@@ -9,7 +9,7 @@ mod app;
 mod database;
 mod http;
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Config {
     pub app: AppConfig,
     #[serde(default = "Default::default")]
