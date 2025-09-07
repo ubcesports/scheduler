@@ -1,14 +1,15 @@
-pub mod commands;
+mod api;
+mod config;
 mod model;
 
+pub use api::*;
+pub use config::*;
 pub use model::*;
 
-use sqlx::{Acquire, PgPool, Postgres};
+use sqlx::{Acquire, Postgres};
 
-pub struct Context {
-    pub db: PgPool,
-}
-
+/// Trait alias for database connection, transaction, or pool
+/// for function signatures.
 pub trait Tx<'a>
 where
     Self: Acquire<'a, Database = Postgres>,
