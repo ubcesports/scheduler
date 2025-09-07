@@ -3,4 +3,4 @@ mode = "development"
 
 [http]
 listen.address = "0.0.0.0"
-listen.port = "5678"
+listen.port = 5678
