@@ -6,5 +6,7 @@ mod availabilities;
 mod availability;
 
 pub fn create_router() -> Router<Application> {
-    Router::new().route("/availabilities", get(availabilities::availabilities))
+    Router::new()
+        .route("/availabilities", get(availabilities::availabilities))
+        .route("/availability/{id}", get(availability::availability))
 }
