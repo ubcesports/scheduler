@@ -69,6 +69,7 @@ pub struct ApplicationData {
 
 pub fn create_router(app: ApplicationData) -> Router {
     Router::new()
+        .merge(availability::create_router())
         .merge(health::create_router())
         .merge(parameters::create_router())
         .merge(slot::create_router())

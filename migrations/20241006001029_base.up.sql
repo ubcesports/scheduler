@@ -30,7 +30,7 @@ CREATE TABLE schedule_assignment
 CREATE TABLE availability
 (
     id         UUID        PRIMARY KEY NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE availability_entry
