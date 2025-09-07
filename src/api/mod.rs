@@ -72,6 +72,7 @@ pub fn create_router(app: ApplicationData) -> Router {
         .merge(availability::create_router())
         .merge(health::create_router())
         .merge(parameters::create_router())
+        .merge(schedule::create_router())
         .merge(slot::create_router())
         .merge(subject::create_router())
         .with_state(Application::new(app))
