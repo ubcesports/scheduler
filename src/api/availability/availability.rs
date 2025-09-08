@@ -49,7 +49,7 @@ pub async fn availability(
             FROM availability_entry
                 INNER JOIN subject ON subject_id = subject.id 
                 WHERE availability_id = $1;
-            "#,
+        "#,
         metadata.id as Id,
     )
     .fetch_all(&state.pool)

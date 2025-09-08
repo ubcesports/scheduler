@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use souvenir::{Id, Identifiable, Tagged};
-use sqlx::{Executor, Postgres};
+use sqlx::{Executor, PgConnection, Postgres};
 
 use crate::Tx;
 
@@ -17,7 +17,7 @@ impl Availability {
         Self { id }
     }
 
-    pub async fn upsert(&mut self, tx: impl Tx<'_>) -> anyhow::Result<()> {
+    pub async fn upsert(&mut self, tx: &mut PgConnection) -> anyhow::Result<()> {
         sqlx::query!(
             r#"
                 INSERT INTO availability (id)
@@ -26,13 +26,13 @@ impl Availability {
             "#,
             self.id as Id,
         )
-        .execute(&mut *tx.acquire().await?)
+        .execute(tx)
         .await?;
 
         Ok(())
     }
 
-    pub async fn fetch_current(tx: impl Executor<'_, Database = Postgres>) -> anyhow::Result<Self> {
+    pub async fn fetch_current(tx: impl Tx<'_>) -> anyhow::Result<Self> {
         Ok(sqlx::query_as!(
             Availability,
             r#"
@@ -40,7 +40,7 @@ impl Availability {
                     WHERE id = (SELECT availability FROM parameters);
             "#
         )
-        .fetch_one(tx)
+        .fetch_one(&mut *tx.acquire().await?)
         .await?)
     }
 

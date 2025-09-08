@@ -1,4 +1,5 @@
 use souvenir::{Id, Identifiable, Tagged};
+use sqlx::PgConnection;
 
 use crate::Tx;
 
@@ -27,10 +28,10 @@ impl Subject {
     pub async fn upsert(
         id: Id,
         w2m_id: Option<i32>,
-        name: impl Into<String>,
-        tx: impl Tx<'_>,
+        name: &str,
+        tx: &mut PgConnection,
     ) -> Result<Self, sqlx::Error> {
-        let name_str = name.into();
+        let name_str = name.to_string();
 
         sqlx::query!(
             r#"
@@ -43,7 +44,7 @@ impl Subject {
             w2m_id,
             name_str,
         )
-        .fetch_one(&mut *tx.acquire().await?)
+        .fetch_one(tx)
         .await
         .map(|result| Self {
             id: result.id,

@@ -12,8 +12,8 @@ use sqlx::{Acquire, Postgres};
 /// for function signatures.
 pub trait Tx<'a>
 where
-    Self: Acquire<'a, Database = Postgres>,
+    Self: Acquire<'a, Database = Postgres> + Send,
 {
 }
 
-impl<'a, T: Acquire<'a, Database = Postgres>> Tx<'a> for T {}
+impl<'a, T: Acquire<'a, Database = Postgres> + Send> Tx<'a> for T {}
