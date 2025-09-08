@@ -115,8 +115,7 @@ pub async fn import(
                 .await?;
 
                 slots_imported += 1;
-                let w2m_id = result.w2m_id.ok_or(ApiError::Internal("Database returned NULL for w2m_id".into()))?;
-                Slot::new(result.id, w2m_id)
+                Slot::new(result.id, result.w2m_id.unwrap())
             };
 
             sqlx::query!(
