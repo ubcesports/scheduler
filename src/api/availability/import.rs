@@ -46,7 +46,7 @@ pub async fn import(
     let mut tx = app.pool.begin().await?;
 
     let mut availability = Availability::new(id!(Availability));
-    availability.upsert(&mut *tx).await?;
+    availability.upsert(&mut tx).await?;
 
     // Get all time slots, add to database, and map slot number to slot
     let slot_regex = Regex::new(r"TimeOfSlot\[(\d+)]=(\d+)").unwrap();
@@ -65,7 +65,7 @@ pub async fn import(
     let mut people = HashMap::new();
 
     for (_, [name, id]) in person_regex.captures_iter(&page).map(|c| c.extract()) {
-        let subject = Subject::upsert(id!(Subject), id.parse::<i32>().ok(), name, &mut *tx).await?;
+        let subject = Subject::upsert(id!(Subject), id.parse::<i32>().ok(), name, &mut tx).await?;
         people.insert(subject.w2m_id.unwrap(), subject);
     }
 
@@ -100,7 +100,7 @@ pub async fn import(
             }
 
             let slot = {
-                let data = Slot::new(id!(Slot), *slots.get(&slot).unwrap() as i32);
+                let data = Slot::new(id!(Slot), *slots.get(&slot).unwrap());
                 let result = sqlx::query!(
                     r#"
                         INSERT INTO slot (id, w2m_id)

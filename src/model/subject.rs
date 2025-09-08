@@ -1,8 +1,6 @@
 use souvenir::{Id, Identifiable, Tagged};
 use sqlx::PgConnection;
 
-use crate::Tx;
-
 #[derive(Debug, Hash, PartialEq, Eq, Identifiable, Tagged)]
 #[souvenir(tag = "sub")]
 pub struct Subject {
@@ -13,9 +11,9 @@ pub struct Subject {
 }
 
 impl Subject {
-    pub async fn find(id: Id, tx: impl Tx<'_>) -> Result<Self, sqlx::Error> {
+    pub async fn find(id: Id, tx: &mut PgConnection) -> Result<Self, sqlx::Error> {
         let data = sqlx::query!("SELECT * FROM subject WHERE id = $1 LIMIT 1;", id as Id)
-            .fetch_one(&mut *tx.acquire().await?)
+            .fetch_one(tx)
             .await?;
 
         Ok(Subject {
@@ -53,10 +51,10 @@ impl Subject {
         })
     }
 
-    pub async fn all_subjects(tx: impl Tx<'_>) -> Result<Vec<Self>, sqlx::Error> {
+    pub async fn all_subjects(tx: &mut PgConnection) -> Result<Vec<Self>, sqlx::Error> {
         Ok(
             sqlx::query!(r#"SELECT id AS "id: Id", w2m_id, name FROM subject;"#)
-                .fetch_all(&mut *tx.acquire().await?)
+                .fetch_all(tx)
                 .await?
                 .into_iter()
                 .map(|record| Subject {

@@ -1,9 +1,7 @@
 use std::collections::HashMap;
 
 use souvenir::{Id, Identifiable, Tagged};
-use sqlx::{Executor, PgConnection, Postgres};
-
-use crate::Tx;
+use sqlx::PgConnection;
 
 #[derive(Debug, Identifiable, Tagged)]
 #[souvenir(tag = "av")]
@@ -32,7 +30,7 @@ impl Availability {
         Ok(())
     }
 
-    pub async fn fetch_current(tx: impl Tx<'_>) -> anyhow::Result<Self> {
+    pub async fn fetch_current(tx: &mut PgConnection) -> anyhow::Result<Self> {
         Ok(sqlx::query_as!(
             Availability,
             r#"
@@ -40,7 +38,7 @@ impl Availability {
                     WHERE id = (SELECT availability FROM parameters);
             "#
         )
-        .fetch_one(&mut *tx.acquire().await?)
+        .fetch_one(tx)
         .await?)
     }
 
@@ -48,7 +46,7 @@ impl Availability {
         &self,
         slot: impl Identifiable,
         subject: impl Identifiable,
-        tx: impl Tx<'_>,
+        tx: &mut PgConnection,
     ) -> anyhow::Result<()> {
         sqlx::query!(
             "
@@ -59,7 +57,7 @@ impl Availability {
             slot.id() as Id,
             subject.id() as Id,
         )
-        .execute(&mut *tx.acquire().await?)
+        .execute(tx)
         .await?;
 
         Ok(())
@@ -68,7 +66,7 @@ impl Availability {
     pub async fn for_slot(
         &self,
         slot: impl Identifiable,
-        tx: impl Tx<'_>,
+        tx: &mut PgConnection,
     ) -> anyhow::Result<Vec<Id>> {
         Ok(sqlx::query!(
             r#"
@@ -78,7 +76,7 @@ impl Availability {
             self.id as Id,
             slot.id() as Id,
         )
-        .fetch_all(&mut *tx.acquire().await?)
+        .fetch_all(tx)
         .await?
         .into_iter()
         .map(|record| record.id)
@@ -88,7 +86,7 @@ impl Availability {
     pub async fn for_subject(
         &self,
         subject: impl Identifiable,
-        tx: impl Tx<'_>,
+        tx: &mut PgConnection,
     ) -> anyhow::Result<Vec<Id>> {
         Ok(sqlx::query!(
             r#"
@@ -98,7 +96,7 @@ impl Availability {
             self.id as Id,
             subject.id() as Id,
         )
-        .fetch_all(&mut *tx.acquire().await?)
+        .fetch_all(tx)
         .await?
         .into_iter()
         .map(|record| record.id)
@@ -107,7 +105,7 @@ impl Availability {
 
     pub async fn sorted_by_flexibility(
         &self,
-        tx: impl Tx<'_>,
+        tx: &mut PgConnection,
     ) -> anyhow::Result<Vec<(Id, Vec<Id>)>> {
         let mut map: HashMap<_, Vec<_>> = HashMap::new();
 
@@ -119,7 +117,7 @@ impl Availability {
             "#,
             self.id as Id
         )
-        .fetch_all(&mut *tx.acquire().await?)
+        .fetch_all(tx)
         .await?
         .into_iter()
         .map(|record| (record.slot, record.subject))

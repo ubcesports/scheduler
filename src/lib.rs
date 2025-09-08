@@ -1,3 +1,5 @@
+#![allow(clippy::module_inception)]
+
 mod api;
 mod config;
 mod model;

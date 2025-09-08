@@ -1,6 +1,6 @@
 use souvenir::{Id, Identifiable, Tagged};
 
-use crate::Tx;
+use sqlx::PgConnection;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Identifiable, Tagged)]
 #[souvenir(tag = "slot")]
@@ -15,14 +15,14 @@ impl Slot {
         Self { id, w2m_id }
     }
 
-    pub async fn all_slots(tx: impl Tx<'_>) -> anyhow::Result<Vec<Self>> {
+    pub async fn all_slots(tx: &mut PgConnection) -> anyhow::Result<Vec<Self>> {
         Ok(sqlx::query!(
             r#"
                 SELECT id as "id: Id", w2m_id FROM slot 
                     ORDER BY w2m_id;
             "#
         )
-        .fetch_all(&mut *tx.acquire().await?)
+        .fetch_all(tx)
         .await?
         .into_iter()
         .map(|record| Self {

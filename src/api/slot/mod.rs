@@ -15,7 +15,8 @@ struct ApiSlot {
 }
 
 async fn slots(State(state): State<Application>) -> ApiResult<Vec<ApiSlot>> {
-    let result = Slot::all_slots(&state.pool).await?;
+    let mut conn = state.pool.acquire().await?;
+    let result = Slot::all_slots(&mut conn).await?;
 
     Ok(Json(
         result

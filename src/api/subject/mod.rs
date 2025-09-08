@@ -16,7 +16,8 @@ struct ApiSubject {
 }
 
 async fn subjects(State(state): State<Application>) -> ApiResult<Vec<ApiSubject>> {
-    let result = Subject::all_subjects(&state.pool).await?;
+    let mut conn = state.pool.acquire().await?;
+    let result = Subject::all_subjects(&mut conn).await?;
 
     Ok(Json(
         result
@@ -32,7 +33,8 @@ async fn subject(
 ) -> ApiResult<ApiSubject> {
     let id = Id::parse(&id)?;
 
-    Ok(Json(Subject::find(id, &state.pool).await.map(
+    let mut conn = state.pool.acquire().await?;
+    Ok(Json(Subject::find(id, &mut conn).await.map(
         |Subject { id, w2m_id, name }| ApiSubject { id, w2m_id, name },
     )?))
 }
