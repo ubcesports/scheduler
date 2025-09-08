@@ -48,6 +48,7 @@
               rustc
               cargo
               clippy
+              rustfmt
             ] ++ buildInputs ++ nativeBuildInputs;
         };
       }

@@ -1,36 +1,5 @@
-use crate::Tx;
 use souvenir::{id, Id, Identifiable, Tagged};
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Identifiable, Tagged)]
-#[souvenir(tag = "slot")]
-pub struct Slot {
-    #[souvenir(id)]
-    pub id: Id,
-    pub w2m_id: i32,
-}
-
-impl Slot {
-    pub fn new(id: Id, w2m_id: i32) -> Self {
-        Self { id, w2m_id }
-    }
-
-    pub async fn all_slots(tx: impl Tx<'_>) -> anyhow::Result<Vec<Self>> {
-        Ok(sqlx::query!(
-            r#"
-                SELECT id as "id: Id", w2m_id FROM slot 
-                    ORDER BY w2m_id;
-            "#
-        )
-        .fetch_all(&mut *tx.acquire().await?)
-        .await?
-        .into_iter()
-        .map(|record| Self {
-            id: record.id,
-            w2m_id: record.w2m_id.unwrap(),
-        })
-        .collect())
-    }
-}
+use sqlx::PgConnection;
 
 #[derive(Copy, Clone, Debug, Identifiable, Tagged)]
 #[souvenir(tag = "sch")]
@@ -49,7 +18,7 @@ impl Schedule {
         Self { id, parent }
     }
 
-    pub async fn resolve(id: Id, tx: impl Tx<'_>) -> anyhow::Result<Self> {
+    pub async fn resolve(id: Id, tx: &mut PgConnection) -> anyhow::Result<Self> {
         Ok(sqlx::query_as!(
             Schedule,
             r#"
@@ -58,11 +27,11 @@ impl Schedule {
             "#,
             id as Id
         )
-        .fetch_one(&mut *tx.acquire().await?)
+        .fetch_one(tx)
         .await?)
     }
 
-    pub async fn fetch_current(tx: impl Tx<'_>) -> anyhow::Result<Self> {
+    pub async fn fetch_current(tx: &mut PgConnection) -> anyhow::Result<Self> {
         Ok(sqlx::query_as!(
             Schedule,
             r#"
@@ -70,11 +39,11 @@ impl Schedule {
                     WHERE id = (SELECT schedule FROM parameters);
             "#
         )
-        .fetch_one(&mut *tx.acquire().await?)
+        .fetch_one(tx)
         .await?)
     }
 
-    pub async fn upsert(&mut self, tx: impl Tx<'_>) -> anyhow::Result<()> {
+    pub async fn upsert(&mut self, tx: &mut PgConnection) -> anyhow::Result<()> {
         sqlx::query!(
             "
             INSERT INTO schedule (id, parent_id) VALUES ($1, $2)
@@ -83,13 +52,17 @@ impl Schedule {
             self.id as Id,
             self.parent as Option<Id>
         )
-        .execute(&mut *tx.acquire().await?)
+        .execute(tx)
         .await?;
 
         Ok(())
     }
 
-    pub async fn count(&self, subject: impl Identifiable, tx: impl Tx<'_>) -> anyhow::Result<u32> {
+    pub async fn count(
+        &self,
+        subject: impl Identifiable,
+        tx: &mut PgConnection,
+    ) -> anyhow::Result<u32> {
         Ok(sqlx::query!(
             "
                 SELECT COUNT(*) AS count FROM schedule_assignment
@@ -98,7 +71,7 @@ impl Schedule {
             self.id as Id,
             subject.id() as Id,
         )
-        .fetch_one(&mut *tx.acquire().await?)
+        .fetch_one(tx)
         .await?
         .count
         .unwrap_or(0) as u32)
@@ -107,19 +80,18 @@ impl Schedule {
     pub async fn count_total(
         &self,
         subject: impl Identifiable,
-        tx: impl Tx<'_>,
+        tx: &mut PgConnection,
     ) -> anyhow::Result<u32> {
-        let mut conn = tx.acquire().await?;
         let subject = subject.id();
 
         let mut schedule = *self;
         let mut count = 0;
 
         loop {
-            count += schedule.count(subject, &mut *conn).await?;
+            count += schedule.count(subject, tx).await?;
 
             if let Some(parent) = schedule.parent {
-                schedule = Schedule::resolve(parent, &mut *conn).await?;
+                schedule = Schedule::resolve(parent, tx).await?;
             } else {
                 break;
             }
@@ -131,21 +103,20 @@ impl Schedule {
     pub async fn last_scheduled(
         &self,
         subject: impl Identifiable,
-        tx: impl Tx<'_>,
+        tx: &mut PgConnection,
     ) -> anyhow::Result<Option<u64>> {
-        let mut conn = tx.acquire().await?;
         let subject = subject.id();
 
         let mut schedule = *self;
         let mut count = 0;
 
         loop {
-            if schedule.count(subject, &mut *conn).await? > 0 {
+            if schedule.count(subject, tx).await? > 0 {
                 return Ok(Some(count));
             }
 
             if let Some(parent) = schedule.parent {
-                schedule = Schedule::resolve(parent, &mut *conn).await?;
+                schedule = Schedule::resolve(parent, tx).await?;
                 count += 1;
             } else {
                 return Ok(None);
@@ -157,7 +128,7 @@ impl Schedule {
         &self,
         slot: impl Identifiable,
         subject: impl Identifiable,
-        tx: impl Tx<'_>,
+        tx: &mut PgConnection,
     ) -> Result<(), sqlx::Error> {
         sqlx::query!(
             "
@@ -168,7 +139,7 @@ impl Schedule {
             subject.id() as Id,
             slot.id() as Id,
         )
-        .execute(&mut *tx.acquire().await?)
+        .execute(tx)
         .await?;
 
         Ok(())
@@ -177,7 +148,7 @@ impl Schedule {
     pub async fn get_slot(
         &self,
         slot: impl Identifiable,
-        tx: impl Tx<'_>,
+        tx: &mut PgConnection,
     ) -> Result<Vec<Id>, sqlx::Error> {
         Ok(sqlx::query!(
             r#"
@@ -187,7 +158,7 @@ impl Schedule {
             self.id as Id,
             slot.id() as Id,
         )
-        .fetch_all(&mut *tx.acquire().await?)
+        .fetch_all(tx)
         .await?
         .into_iter()
         .map(|record| record.subject)

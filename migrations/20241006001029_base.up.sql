@@ -30,7 +30,7 @@ CREATE TABLE schedule_assignment
 CREATE TABLE availability
 (
     id         UUID        PRIMARY KEY NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE availability_entry
@@ -44,11 +44,13 @@ CREATE TABLE availability_entry
 
 CREATE TABLE parameters
 (
-    lock         INTEGER PRIMARY KEY GENERATED ALWAYS AS (1) STORED UNIQUE,
-    version      INTEGER DEFAULT 1,
+    lock         INTEGER PRIMARY KEY NOT NULL GENERATED ALWAYS AS (1) STORED UNIQUE,
+    version      INTEGER NOT NULL DEFAULT 1,
 
     availability UUID REFERENCES availability (id),
     schedule     UUID REFERENCES schedule (id),
 
     CONSTRAINT parameters_lock CHECK (lock = 1)
 );
+
+INSERT INTO parameters DEFAULT VALUES;
