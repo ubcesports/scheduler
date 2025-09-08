@@ -25,13 +25,10 @@ impl Slot {
         .fetch_all(tx)
         .await?
         .into_iter()
-        .map(|record| {
-            let w2m_id = record.w2m_id.ok_or_else(|| anyhow::anyhow!("w2m_id is NULL for slot id {}", record.id))?;
-            Ok(Self {
-                id: record.id,
-                w2m_id,
-            })
+        .map(|record| Self {
+            id: record.id,
+            w2m_id: record.w2m_id.unwrap(),
         })
-        .collect::<Result<Vec<_>, _>>())
+        .collect())
     }
 }
