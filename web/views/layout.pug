@@ -1,0 +1,40 @@
+doctype html
+
+html
+  head
+    title s³ scheduler
+    meta(charset="utf-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1")
+    style(type="text/css").
+      * {
+        font-family: monospace;
+      }
+
+      a, a:visited, a:active {
+        color: blue;
+        text-decoration: none;
+      }
+
+      th, td {
+        padding-right: 2em;
+        vertical-align: top;
+      }
+
+  body
+    header
+      h1 super scuffed scheduler
+      nav
+        span version 0.1 !{' ⋅ ['}
+        a(href="/") Home
+        span !{'] ['}
+        a(href="/import") Import W2M
+        span !{'] ['}
+        a(href="/generate") Generate Schedule
+        span !{']'}
+      br
+    main
+      block content
+    footer
+      br
+      hr
+      p s³ web interface ⋅ made by #[a(href="https://github.com/bjzsh") brian shao]

@@ -1,0 +1,30 @@
+extends layout
+
+block content
+  h2 Availability #{availabilityId}
+  
+  .availability-info
+    strong ID: 
+    = availability.id
+    br
+    strong Created: 
+    = new Date(availability.created_at).toLocaleString()
+
+  .availability-details
+    h3 Availability Entries
+
+    table 
+      tbody 
+        each i in [0, 1, 2, 3, 4]
+          tr 
+            td 
+              pre #{entries[i].data.join('\n')}
+            td 
+              pre #{entries[5 + i].data.join('\n')}
+            td 
+              pre #{entries[10 + i].data.join('\n')}
+            td 
+              pre #{entries[15 + i].data.join('\n')}
+            td 
+              pre #{entries[20 + i].data.join('\n')}
+
