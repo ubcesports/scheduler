@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE parameters SET schedule = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c3130506f26bd175ca9e71f1dda0b8fbc74be66959f659c9c2d1e31999bbcf9f"
+}
