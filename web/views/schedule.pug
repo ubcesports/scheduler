@@ -1,0 +1,48 @@
+extends layout
+
+block content
+  h3 #{scheduleId}
+
+  .schedule-info
+    if schedule.parent
+      span
+        strong Parent: 
+        a(href=`/schedule/${schedule.parent}`) #{schedule.parent}
+    else
+      span
+        strong Parent: 
+        | #[i Root Schedule]
+    br
+
+    strong Child: 
+    span !{'['}
+    a(href=`/generate?parent=${schedule.id}`) Generate Schedule
+    span !{'] '}
+    br
+
+    strong Export: !{' '}
+    span !{'['}
+    a(href=`/api/schedule/${scheduleId}/export` target="_blank") csv
+    span !{'] ['}
+    a(href=`/api/schedule/${scheduleId}/export?format=sheets-export` target="_blank") sheets
+    span !{']'}
+    br
+
+  .schedule-details
+    h3 Schedule Details
+    
+    table 
+      tbody 
+        each i in [0, 1, 2, 3, 4]
+          tr 
+            td #{assignments[i].data[0].name}
+            td #{assignments[5 + i].data[0].name}
+            td #{assignments[10 + i].data[0].name}
+            td #{assignments[15 + i].data[0].name}
+            td #{assignments[20 + i].data[0].name}
+          tr 
+            td #{assignments[i].data[1].name}
+            td #{assignments[5 + i].data[1].name}
+            td #{assignments[10 + i].data[1].name}
+            td #{assignments[15 + i].data[1].name}
+            td #{assignments[20 + i].data[1].name}

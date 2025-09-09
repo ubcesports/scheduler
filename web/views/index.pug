@@ -1,0 +1,45 @@
+extends layout
+
+block content
+  .schedules
+    if schedules.length > 0
+      table
+        thead
+          tr
+            th(align="left") Schedule
+            th(align="left") Parent
+        tbody
+          each schedule in schedules
+            tr
+              td
+                a(href=`/schedule/${schedule.id}`) #{schedule.id}
+                if schedule.id === currentSchedule
+                  span *
+              td
+                if schedule.parent
+                  a(href=`/schedule/${schedule.parent}`) #{schedule.parent}
+                else
+                  span !{'N/A'}
+    else
+      p No schedules found
+
+  br
+
+  .availabilities
+    if availabilities.length > 0
+      table
+        thead
+          tr
+            th(align="left") Availability
+            th(align="left") Created At
+        tbody
+          each availability in availabilities
+            tr
+              td
+                a(href=`/availability/${availability.id}`) #{availability.id}
+                if availability.id === currentAvailability
+                  span *
+              td
+                span #{new Date(availability.created_at).toLocaleString()}
+    else
+      p No availabilities found
