@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO availability (id) VALUES ($1);",
+  "query": "UPDATE parameters SET availability = $1",
   "describe": {
     "columns": [],
     "parameters": {
@@ -10,5 +10,5 @@
     },
     "nullable": []
   },
-  "hash": "5bcc2590d796707533f2a56c682950348f5e3ea723129711c90688a1d2610cf8"
+  "hash": "b139df428f453e013db06cd6775069294bc50c930a156634fe773aa8e0ed0fc8"
 }

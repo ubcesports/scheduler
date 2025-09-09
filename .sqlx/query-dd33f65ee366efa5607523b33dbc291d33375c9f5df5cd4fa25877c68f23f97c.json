@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT id as \"id: Id\", w2m_id FROM slot\n                WHERE id = $1;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: Id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "w2m_id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "dd33f65ee366efa5607523b33dbc291d33375c9f5df5cd4fa25877c68f23f97c"
+}

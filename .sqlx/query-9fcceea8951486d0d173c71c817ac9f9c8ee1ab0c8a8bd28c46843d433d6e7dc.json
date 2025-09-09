@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT \n                slot_id AS \"slot: Id\", \n                subject_id AS \"subject: Id\", \n                subject.name\n            FROM schedule_assignment\n                INNER JOIN subject ON subject_id = subject.id \n                WHERE schedule_id = $1;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "slot: Id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "subject: Id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "9fcceea8951486d0d173c71c817ac9f9c8ee1ab0c8a8bd28c46843d433d6e7dc"
+}

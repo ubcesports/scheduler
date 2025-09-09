@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: Id\", w2m_id FROM slot ORDER BY w2m_id ASC;",
+  "query": "\n            SELECT id AS \"id: Id\", created_at FROM availability \n                ORDER BY created_at;\n        ",
   "describe": {
     "columns": [
       {
@@ -10,8 +10,8 @@
       },
       {
         "ordinal": 1,
-        "name": "w2m_id",
-        "type_info": "Int4"
+        "name": "created_at",
+        "type_info": "Timestamptz"
       }
     ],
     "parameters": {
@@ -19,8 +19,8 @@
     },
     "nullable": [
       false,
-      true
+      false
     ]
   },
-  "hash": "ee6b40212d24fa4bf1daead23bcdc8561748ddebf42f381626685021637036cd"
+  "hash": "3580a6056fab6b3892f04c9a4d444053b33f6f5c62c089640561b7f320a3d6b2"
 }
