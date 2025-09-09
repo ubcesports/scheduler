@@ -1,14 +1,15 @@
 import express from "express";
+import proxy from "express-http-proxy";
+import url from "url";
 
-import { api } from "./api";
+import { api } from "./api.js";
 import {
   Schedule,
   Availability,
-  GenerateRequest,
   GenerateResponse,
   Parameters,
   Slots,
-} from "./types";
+} from "./types.js";
 
 const app = express();
 
@@ -154,6 +155,8 @@ app.post("/availability/import", async (req, res) => {
     });
   }
 });
+
+app.use("/api", proxy(process.env.API_BASE || "http://localhost:5678"));
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

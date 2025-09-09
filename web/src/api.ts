@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from "axios";
-import { ApiResponse } from "./types";
+import { ApiResponse } from "./types.js";
 
 const API_BASE = process.env.API_BASE || "http://localhost:5678";
 

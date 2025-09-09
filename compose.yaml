@@ -1,0 +1,24 @@
+services:
+  web:
+    build: web
+    ports:
+      - "5679:5679"
+    environment:
+      API_BASE: http://api:5678
+      PORT: 5679
+    networks:
+      - intranet
+
+  api:
+    build: .
+    ports:
+      - "5678:5678"
+    environment:
+      SC_CONFIG: /config.toml
+    volumes:
+      - ./config.toml:/config.toml:ro
+    networks:
+      - intranet
+
+networks:
+  intranet:
