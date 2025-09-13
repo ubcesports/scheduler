@@ -20,11 +20,13 @@ pub enum ParseType {
 pub struct ImportRequest {
     pub format: ParseType,
     pub source: String,
+    pub name: Option<String>,
 }
 
 #[derive(Serialize)]
 pub struct ImportResponse {
     pub id: Id,
+    pub name: Option<String>,
     pub entries: i32,
 
     pub subjects_imported: i32,
@@ -45,7 +47,7 @@ pub async fn import(
     let page = reqwest::get(&body.source).await?.text().await?;
     let mut tx = app.pool.begin().await?;
 
-    let mut availability = Availability::new(id!(Availability));
+    let mut availability = Availability::new(id!(Availability), body.name);
     availability.upsert(&mut tx).await?;
 
     // Get all time slots, add to database, and map slot number to slot
@@ -146,6 +148,7 @@ pub async fn import(
 
     Ok(Json(ImportResponse {
         id: availability.id,
+        name: availability.name,
         subjects_imported: people.len() as i32,
         slots_imported,
         entries: entries_created,

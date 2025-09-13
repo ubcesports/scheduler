@@ -22,7 +22,7 @@ pub struct ApiAssignment {
     pub name: String,
 }
 
-pub async fn schedule(
+pub async fn get_schedule(
     State(state): State<Application>,
     Path(id): Path<String>,
 ) -> ApiResult<ApiResponse> {
