@@ -13,6 +13,7 @@ use crate::{ApiResult, Application};
 #[derive(Serialize)]
 pub struct ApiResponse {
     id: Id,
+    name: Option<String>,
     created_at: DateTime<Utc>,
     entries: HashMap<Id, Vec<ApiSubject>>,
 }
@@ -20,7 +21,8 @@ pub struct ApiResponse {
 #[derive(Serialize)]
 pub struct ApiSubject {
     id: Id,
-    name: String,
+    tag: String,
+    name: Option<String>,
 }
 
 pub async fn availability(
@@ -29,7 +31,7 @@ pub async fn availability(
 ) -> ApiResult<ApiResponse> {
     let metadata = sqlx::query!(
         r#"
-            SELECT id AS "id: Id", created_at FROM availability 
+            SELECT id AS "id: Id", name, created_at FROM availability 
                 WHERE id = $1
                 LIMIT 1;
         "#,
@@ -45,6 +47,7 @@ pub async fn availability(
             SELECT 
                 slot_id AS "slot: Id", 
                 subject_id AS "subject: Id", 
+                subject.tag,
                 subject.name
             FROM availability_entry
                 INNER JOIN subject ON subject_id = subject.id 
@@ -59,11 +62,13 @@ pub async fn availability(
         map.entry(e.slot).or_default().push(ApiSubject {
             id: e.subject,
             name: e.name,
+            tag: e.tag,
         })
     });
 
     Ok(Json(ApiResponse {
         id: metadata.id,
+        name: metadata.name,
         created_at: metadata.created_at,
         entries: map,
     }))

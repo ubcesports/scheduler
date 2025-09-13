@@ -7,6 +7,7 @@ use crate::{api::ApiResult, Application};
 #[derive(Serialize)]
 pub struct ApiResponse {
     pub id: Id,
+    pub name: Option<String>,
     pub parent: Option<Id>,
 }
 
@@ -14,7 +15,7 @@ pub async fn schedules(State(app): State<Application>) -> ApiResult<Vec<ApiRespo
     let response = sqlx::query_as!(
         ApiResponse,
         r#"
-            SELECT id AS "id: Id", parent_id AS "parent: Id" 
+            SELECT id AS "id: Id", name, parent_id AS "parent: Id" 
                 FROM schedule;
         "#
     )

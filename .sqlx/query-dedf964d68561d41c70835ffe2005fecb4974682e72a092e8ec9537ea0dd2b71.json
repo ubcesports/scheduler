@@ -1,20 +1,15 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: Id\", w2m_id, name FROM subject;",
+  "query": "\n                SELECT id as \"id: _\", name FROM availability \n                    WHERE id = (SELECT availability FROM parameters);\n            ",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "id: Id",
+        "name": "id: _",
         "type_info": "Uuid"
       },
       {
         "ordinal": 1,
-        "name": "w2m_id",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 2,
         "name": "name",
         "type_info": "Text"
       }
@@ -24,9 +19,8 @@
     },
     "nullable": [
       false,
-      true,
-      false
+      true
     ]
   },
-  "hash": "c55cca719b1a5a0438487b499cc7294f1380797c3098d47a3a3cde1a9b826cf1"
+  "hash": "dedf964d68561d41c70835ffe2005fecb4974682e72a092e8ec9537ea0dd2b71"
 }

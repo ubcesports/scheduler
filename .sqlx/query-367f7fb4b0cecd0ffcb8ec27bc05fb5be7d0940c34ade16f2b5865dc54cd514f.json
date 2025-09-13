@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT id AS \"id: Id\", created_at FROM availability \n                WHERE id = $1\n                LIMIT 1;\n        ",
+  "query": "\n            SELECT id AS \"id: Id\", name, created_at FROM availability \n                WHERE id = $1\n                LIMIT 1;\n        ",
   "describe": {
     "columns": [
       {
@@ -10,6 +10,11 @@
       },
       {
         "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
         "name": "created_at",
         "type_info": "Timestamptz"
       }
@@ -21,8 +26,9 @@
     },
     "nullable": [
       false,
+      true,
       false
     ]
   },
-  "hash": "a07d2c57648c57ccc01db325562beb9ed017ff272579f287444f584c02bd54c2"
+  "hash": "367f7fb4b0cecd0ffcb8ec27bc05fb5be7d0940c34ade16f2b5865dc54cd514f"
 }

@@ -6,8 +6,8 @@ use sqlx::PgConnection;
 pub struct Subject {
     #[souvenir(id)]
     pub id: Id,
-    pub w2m_id: Option<i32>,
-    pub name: String,
+    pub tag: String,
+    pub name: Option<String>,
 }
 
 impl Subject {
@@ -18,48 +18,46 @@ impl Subject {
 
         Ok(Subject {
             id,
-            w2m_id: data.w2m_id,
+            tag: data.tag,
             name: data.name,
         })
     }
 
     pub async fn upsert(
         id: Id,
-        w2m_id: Option<i32>,
-        name: &str,
+        tag: &str,
+        name: Option<&str>,
         tx: &mut PgConnection,
     ) -> Result<Self, sqlx::Error> {
-        let name_str = name.to_string();
-
         sqlx::query!(
             r#"
-                INSERT INTO subject (id, w2m_id, name)
+                INSERT INTO subject (id, tag, name)
                     VALUES ($1, $2, $3)
-                    ON CONFLICT (w2m_id) DO UPDATE SET w2m_id = $2
-                    RETURNING id AS "id: Id", w2m_id, name;
+                    ON CONFLICT (tag) DO UPDATE SET name = $3
+                    RETURNING id AS "id: Id", tag, name;
             "#,
             id as Id,
-            w2m_id,
-            name_str,
+            tag,
+            name,
         )
         .fetch_one(tx)
         .await
         .map(|result| Self {
             id: result.id,
-            w2m_id: result.w2m_id,
+            tag: result.tag,
             name: result.name,
         })
     }
 
     pub async fn all_subjects(tx: &mut PgConnection) -> Result<Vec<Self>, sqlx::Error> {
         Ok(
-            sqlx::query!(r#"SELECT id AS "id: Id", w2m_id, name FROM subject;"#)
+            sqlx::query!(r#"SELECT id AS "id: Id", tag, name FROM subject;"#)
                 .fetch_all(tx)
                 .await?
                 .into_iter()
                 .map(|record| Subject {
                     id: record.id,
-                    w2m_id: record.w2m_id,
+                    tag: record.tag,
                     name: record.name,
                 })
                 .collect(),

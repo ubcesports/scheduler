@@ -19,7 +19,8 @@ pub struct ApiResponse {
 #[derive(Serialize)]
 pub struct ApiAssignment {
     pub id: Id,
-    pub name: String,
+    pub tag: String,
+    pub name: Option<String>,
 }
 
 pub async fn get_schedule(
@@ -44,6 +45,7 @@ pub async fn get_schedule(
             SELECT 
                 slot_id AS "slot: Id", 
                 subject_id AS "subject: Id", 
+                subject.tag,
                 subject.name
             FROM schedule_assignment
                 INNER JOIN subject ON subject_id = subject.id 
@@ -58,6 +60,7 @@ pub async fn get_schedule(
         map.entry(e.slot).or_default().push(ApiAssignment {
             id: e.subject,
             name: e.name,
+            tag: e.tag,
         })
     });
 

@@ -64,11 +64,13 @@ pub async fn import(
     // Get all subjects, add to database, and create a map of their w2m id to subject
     let person_regex =
         Regex::new(r"PeopleNames\[\d+] = '([^']+)';PeopleIDs\[\d+] = (\d+)").unwrap();
-    let mut people = HashMap::new();
+    let mut people: HashMap<i32, Subject> = HashMap::new();
 
     for (_, [name, id]) in person_regex.captures_iter(&page).map(|c| c.extract()) {
-        let subject = Subject::upsert(id!(Subject), id.parse::<i32>().ok(), name, &mut tx).await?;
-        people.insert(subject.w2m_id.unwrap(), subject);
+        if Regex::new(r"\d{8}").unwrap().is_match(name) {
+            let subject = Subject::upsert(id!(Subject), name, None, &mut tx).await?;
+            people.insert(id.parse().unwrap(), subject);
+        }
     }
 
     // Add availability entries
