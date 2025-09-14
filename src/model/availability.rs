@@ -8,21 +8,23 @@ use sqlx::PgConnection;
 pub struct Availability {
     #[souvenir(id)]
     pub id: Id,
+    pub name: Option<String>,
 }
 
 impl Availability {
-    pub fn new(id: Id) -> Self {
-        Self { id }
+    pub fn new(id: Id, name: Option<String>) -> Self {
+        Self { id, name }
     }
 
     pub async fn upsert(&mut self, tx: &mut PgConnection) -> anyhow::Result<()> {
         sqlx::query!(
             r#"
-                INSERT INTO availability (id)
-                    VALUES ($1)
-                    ON CONFLICT DO NOTHING;
+                INSERT INTO availability (id, name)
+                    VALUES ($1, $2)
+                    ON CONFLICT (id) DO UPDATE SET name = $2;
             "#,
             self.id as Id,
+            self.name,
         )
         .execute(tx)
         .await?;
@@ -34,7 +36,7 @@ impl Availability {
         Ok(sqlx::query_as!(
             Availability,
             r#"
-                SELECT id as "id: _" FROM availability 
+                SELECT id as "id: _", name FROM availability 
                     WHERE id = (SELECT availability FROM parameters);
             "#
         )

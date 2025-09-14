@@ -20,11 +20,13 @@ pub enum ParseType {
 pub struct ImportRequest {
     pub format: ParseType,
     pub source: String,
+    pub name: Option<String>,
 }
 
 #[derive(Serialize)]
 pub struct ImportResponse {
     pub id: Id,
+    pub name: Option<String>,
     pub entries: i32,
 
     pub subjects_imported: i32,
@@ -45,7 +47,7 @@ pub async fn import(
     let page = reqwest::get(&body.source).await?.text().await?;
     let mut tx = app.pool.begin().await?;
 
-    let mut availability = Availability::new(id!(Availability));
+    let mut availability = Availability::new(id!(Availability), body.name);
     availability.upsert(&mut tx).await?;
 
     // Get all time slots, add to database, and map slot number to slot
@@ -62,11 +64,13 @@ pub async fn import(
     // Get all subjects, add to database, and create a map of their w2m id to subject
     let person_regex =
         Regex::new(r"PeopleNames\[\d+] = '([^']+)';PeopleIDs\[\d+] = (\d+)").unwrap();
-    let mut people = HashMap::new();
+    let mut people: HashMap<i32, Subject> = HashMap::new();
 
     for (_, [name, id]) in person_regex.captures_iter(&page).map(|c| c.extract()) {
-        let subject = Subject::upsert(id!(Subject), id.parse::<i32>().ok(), name, &mut tx).await?;
-        people.insert(subject.w2m_id.unwrap(), subject);
+        if Regex::new(r"\d{8}").unwrap().is_match(name) {
+            let subject = Subject::upsert(id!(Subject), name, None, &mut tx).await?;
+            people.insert(id.parse().unwrap(), subject);
+        }
     }
 
     // Add availability entries
@@ -146,6 +150,7 @@ pub async fn import(
 
     Ok(Json(ImportResponse {
         id: availability.id,
+        name: availability.name,
         subjects_imported: people.len() as i32,
         slots_imported,
         entries: entries_created,

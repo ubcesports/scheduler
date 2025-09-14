@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n                SELECT id AS \"id: Id\", parent_id AS \"parent: Id\" FROM schedule \n                    WHERE id = (SELECT schedule FROM parameters);\n            ",
+  "query": "\n            SELECT id AS \"id: Id\", name, parent_id AS \"parent: Id\" \n                FROM schedule;\n        ",
   "describe": {
     "columns": [
       {
@@ -10,6 +10,11 @@
       },
       {
         "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
         "name": "parent: Id",
         "type_info": "Uuid"
       }
@@ -19,8 +24,9 @@
     },
     "nullable": [
       false,
+      true,
       true
     ]
   },
-  "hash": "c0ef95d613def5f8bf0de81f4e53d2f1f0866a079ce6a6a30380736c9ae33587"
+  "hash": "858251dd63944dc0662bd29b6853a53d2f926f50f6d53ae3587474e17037d181"
 }

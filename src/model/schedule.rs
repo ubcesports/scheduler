@@ -1,28 +1,29 @@
 use souvenir::{id, Id, Identifiable, Tagged};
 use sqlx::PgConnection;
 
-#[derive(Copy, Clone, Debug, Identifiable, Tagged)]
+#[derive(Clone, Debug, Identifiable, Tagged)]
 #[souvenir(tag = "sch")]
 pub struct Schedule {
+    pub name: Option<String>,
     #[souvenir(id)]
     pub id: Id,
     pub parent: Option<Id>,
 }
 
 impl Schedule {
-    pub fn new(parent: Option<Id>) -> Self {
-        Self::from(id!(Schedule), parent)
+    pub fn new(parent: Option<Id>, name: Option<String>) -> Self {
+        Self::from(id!(Schedule), parent, name)
     }
 
-    pub fn from(id: Id, parent: Option<Id>) -> Self {
-        Self { id, parent }
+    pub fn from(id: Id, parent: Option<Id>, name: Option<String>) -> Self {
+        Self { id, parent, name }
     }
 
     pub async fn resolve(id: Id, tx: &mut PgConnection) -> anyhow::Result<Self> {
         Ok(sqlx::query_as!(
             Schedule,
             r#"
-                SELECT id AS "id: Id", parent_id AS "parent: Id" FROM schedule 
+                SELECT id AS "id: Id", parent_id AS "parent: Id", name FROM schedule 
                     WHERE id = $1;
             "#,
             id as Id
@@ -35,7 +36,7 @@ impl Schedule {
         Ok(sqlx::query_as!(
             Schedule,
             r#"
-                SELECT id AS "id: Id", parent_id AS "parent: Id" FROM schedule 
+                SELECT id AS "id: Id", parent_id AS "parent: Id", name FROM schedule 
                     WHERE id = (SELECT schedule FROM parameters);
             "#
         )
@@ -46,11 +47,12 @@ impl Schedule {
     pub async fn upsert(&mut self, tx: &mut PgConnection) -> anyhow::Result<()> {
         sqlx::query!(
             "
-            INSERT INTO schedule (id, parent_id) VALUES ($1, $2)
-                ON CONFLICT (id) DO UPDATE SET parent_id = $2;
+            INSERT INTO schedule (id, parent_id, name) VALUES ($1, $2, $3)
+                ON CONFLICT (id) DO UPDATE SET name = $3;
             ",
             self.id as Id,
-            self.parent as Option<Id>
+            self.parent as Option<Id>,
+            self.name
         )
         .execute(tx)
         .await?;
@@ -84,7 +86,7 @@ impl Schedule {
     ) -> anyhow::Result<u32> {
         let subject = subject.id();
 
-        let mut schedule = *self;
+        let mut schedule = self.clone();
         let mut count = 0;
 
         loop {
@@ -107,7 +109,7 @@ impl Schedule {
     ) -> anyhow::Result<Option<u64>> {
         let subject = subject.id();
 
-        let mut schedule = *self;
+        let mut schedule = self.clone();
         let mut count = 0;
 
         loop {

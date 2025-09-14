@@ -7,6 +7,7 @@ block content
         thead
           tr
             th(align="left") Schedule
+            th(align="left") Name
             th(align="left") Parent
         tbody
           each schedule in schedules
@@ -15,6 +16,11 @@ block content
                 a(href=`/schedule/${schedule.id}`) #{schedule.id}
                 if schedule.id === currentSchedule
                   span *
+              td
+                if schedule.name
+                  span #{schedule.name}
+                else
+                  span Unnamed
               td
                 if schedule.parent
                   a(href=`/schedule/${schedule.parent}`) #{schedule.parent}
@@ -31,6 +37,7 @@ block content
         thead
           tr
             th(align="left") Availability
+            th(align="left") Name
             th(align="left") Created At
         tbody
           each availability in availabilities
@@ -39,6 +46,11 @@ block content
                 a(href=`/availability/${availability.id}`) #{availability.id}
                 if availability.id === currentAvailability
                   span *
+              td
+                if availability.name
+                  span #{availability.name}
+                else
+                  span Unnamed
               td
                 span #{new Date(availability.created_at).toLocaleString()}
     else

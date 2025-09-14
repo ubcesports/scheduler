@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO schedule (id, parent_id, name) VALUES ($1, $2, $3)\n                ON CONFLICT (id) DO UPDATE SET name = $3;\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f4616bf53f3f4acbc22af99505a27b68fa324338404bd464b631ab45a279651f"
+}

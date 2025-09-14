@@ -6,22 +6,26 @@ export interface ApiResponse<T> {
 
 export interface Schedule {
   id: string;
+  name?: string;
   parent?: string;
-  assignments: Record<string, { id: string; name: string; }[]>;
+  assignments: Record<string, { id: string; tag: string; name?: string }[]>;
 }
 
 export interface Availability {
   id: string;
+  name?: string;
   created_at: string;
-  entries: Record<string, { id: string; name: string }[]>;
+  entries: Record<string, { id: string; tag: string; name?: string }[]>;
 }
 
 export interface GenerateRequest {
+  name?: string | null;
   parent?: string | null;
 }
 
 export interface GenerateResponse {
   id: string;
+  name?: string | null;
   parent?: string | null;
 }
 
@@ -34,4 +38,4 @@ export interface Parameters {
 export type Slots = {
   id: string;
   w2m_id: number;
-}[]
+}[];

@@ -6,12 +6,12 @@ use axum::{
 use crate::Application;
 
 mod generate;
-mod schedule;
+mod get_schedule;
 mod schedules;
 
 pub fn create_router() -> Router<Application> {
     Router::new()
         .route("/schedules", get(schedules::schedules))
         .route("/schedule/generate", post(generate::generate))
-        .route("/schedule/{id}", get(schedule::schedule))
+        .route("/schedule/{id}", get(get_schedule::get_schedule))
 }

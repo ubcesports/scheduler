@@ -6,10 +6,9 @@ CREATE TABLE schedule
 
 CREATE TABLE subject
 (
-    id     UUID    PRIMARY KEY NOT NULL,
-    w2m_id INTEGER UNIQUE DEFAULT NULL,
-
-    name   TEXT NOT NULL
+    id   UUID PRIMARY KEY NOT NULL,
+    tag  TEXT UNIQUE NOT NULL,
+    name TEXT
 );
 
 CREATE TABLE slot

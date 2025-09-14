@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                INSERT INTO availability (id, name)\n                    VALUES ($1, $2)\n                    ON CONFLICT (id) DO UPDATE SET name = $2;\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "fd8083fc1470bca7597552a665bd05cf9e5d241830705f8787fc89159dabf3cb"
+}

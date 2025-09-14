@@ -8,6 +8,7 @@ use crate::{ApiResult, Application};
 #[derive(Serialize)]
 pub struct ApiEntry {
     id: Id,
+    name: Option<String>,
     created_at: DateTime<Utc>,
 }
 
@@ -15,7 +16,7 @@ pub async fn availabilities(State(state): State<Application>) -> ApiResult<Vec<A
     let result = sqlx::query_as!(
         ApiEntry,
         r#"
-            SELECT id AS "id: Id", created_at FROM availability 
+            SELECT id AS "id: Id", name, created_at FROM availability 
                 ORDER BY created_at;
         "#
     )
