@@ -30,10 +30,12 @@ impl Subject {
         tx: &mut PgConnection,
     ) -> Result<Self, sqlx::Error> {
         let current_name = sqlx::query!("SELECT name FROM subject WHERE id = $1;", id as Id)
-            .fetch_one(&mut *tx)
-            .await?;
+            .fetch_optional(&mut *tx)
+            .await?
+            .map(|row| row.name)
+            .flatten();
 
-        let name = name.or(current_name.name.as_deref());
+        let name = name.or(current_name.as_deref());
 
         sqlx::query!(
             r#"
