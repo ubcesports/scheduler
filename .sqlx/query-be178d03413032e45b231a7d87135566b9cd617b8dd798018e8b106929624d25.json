@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n                INSERT INTO subject (id, tag, name)\n                    VALUES ($1, $2, $3)\n                    ON CONFLICT DO NOTHING\n                    RETURNING id AS \"id: Id\", tag, name;\n            ",
+  "query": "\n                INSERT INTO subject (id, tag, name)\n                    VALUES ($1, $2, $3)\n                    ON CONFLICT (tag) DO UPDATE SET tag = $2\n                    RETURNING id AS \"id: Id\", tag, name;\n            ",
   "describe": {
     "columns": [
       {
@@ -32,5 +32,5 @@
       true
     ]
   },
-  "hash": "80e70df5cd8ce1748e4f4900acfdc28df6b6b8b0397fa50427e4f11e8901dd77"
+  "hash": "be178d03413032e45b231a7d87135566b9cd617b8dd798018e8b106929624d25"
 }

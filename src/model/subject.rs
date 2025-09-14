@@ -41,7 +41,7 @@ impl Subject {
             r#"
                 INSERT INTO subject (id, tag, name)
                     VALUES ($1, $2, $3)
-                    ON CONFLICT DO NOTHING
+                    ON CONFLICT (tag) DO UPDATE SET tag = $2
                     RETURNING id AS "id: Id", tag, name;
             "#,
             id as Id,
