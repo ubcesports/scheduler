@@ -29,6 +29,12 @@ impl Subject {
         name: Option<&str>,
         tx: &mut PgConnection,
     ) -> Result<Self, sqlx::Error> {
+        let current_name = sqlx::query!("SELECT name FROM subject WHERE id = $1;", id as Id)
+            .fetch_one(&mut *tx)
+            .await?;
+
+        let name = name.or(current_name.name.as_deref());
+
         sqlx::query!(
             r#"
                 INSERT INTO subject (id, tag, name)
@@ -40,7 +46,7 @@ impl Subject {
             tag,
             name,
         )
-        .fetch_one(tx)
+        .fetch_one(&mut *tx)
         .await
         .map(|result| Self {
             id: result.id,
