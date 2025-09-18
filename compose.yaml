@@ -19,7 +19,7 @@ services:
       - "5678:5678"
     environment:
       SC_CONFIG: /config.toml
-      SC_DATABASE_URL: postgresql://dev:dev@database:5434/dev?sslmode=disable
+      SC_DATABASE_URL: "postgresql://dev:dev@database/dev?sslmode=disable"
     volumes:
       - ./config.toml:/config.toml:ro
     networks:
@@ -28,10 +28,10 @@ services:
   database:
     image: postgres:latest
     ports:
-      - "5434:5432"
+      - "5432:5432"
     environment:
       POSTGRES_USER: dev
-      POSTGRES_PASSWORD: dev 
+      POSTGRES_PASSWORD: dev
       POSTGRES_DB: dev
     volumes:
       - pgdata:/var/lib/postgresql/data
