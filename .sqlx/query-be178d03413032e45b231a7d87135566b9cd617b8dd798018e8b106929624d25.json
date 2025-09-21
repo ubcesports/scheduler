@@ -1,11 +1,11 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM subject WHERE id = $1 LIMIT 1;",
+  "query": "\n                INSERT INTO subject (id, tag, name)\n                    VALUES ($1, $2, $3)\n                    ON CONFLICT (tag) DO UPDATE SET tag = $2\n                    RETURNING id AS \"id: Id\", tag, name;\n            ",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "id",
+        "name": "id: Id",
         "type_info": "Uuid"
       },
       {
@@ -21,7 +21,9 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Uuid",
+        "Text",
+        "Text"
       ]
     },
     "nullable": [
@@ -30,5 +32,5 @@
       true
     ]
   },
-  "hash": "3895a1bc528bf9918b19173d265454a01f8671a61f09aa0fc75cd2466fe27ee2"
+  "hash": "be178d03413032e45b231a7d87135566b9cd617b8dd798018e8b106929624d25"
 }

@@ -1,6 +1,8 @@
 services:
   web:
     build: web
+    depends_on:
+      - api
     ports:
       - "5679:5679"
     environment:
@@ -11,14 +13,33 @@ services:
 
   api:
     build: .
+    depends_on:
+      - database
     ports:
       - "5678:5678"
     environment:
       SC_CONFIG: /config.toml
+      SC_DATABASE_URL: postgresql://dev:dev@database:5434/dev?sslmode=disable
     volumes:
       - ./config.toml:/config.toml:ro
     networks:
       - intranet
+
+  database:
+    image: postgres:latest
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev 
+      POSTGRES_DB: dev
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - intranet
+
+volumes:
+  pgdata:
 
 networks:
   intranet:

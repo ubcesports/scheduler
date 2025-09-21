@@ -8,11 +8,13 @@ use crate::{ApiResult, Application, Availability, Schedule};
 
 #[derive(Deserialize)]
 pub struct GenerateRequest {
+    pub name: Option<String>,
     pub parent: Option<Id>,
 }
 
 #[derive(Serialize)]
 pub struct GenerateResponse {
+    pub name: Option<String>,
     pub id: Id,
     pub parent: Option<Id>,
 }
@@ -30,7 +32,7 @@ pub async fn generate(
         None => Schedule::fetch_current(&mut tx).await.ok().map(|s| s.id),
     };
 
-    let mut schedule = Schedule::new(parent_id);
+    let mut schedule = Schedule::new(parent_id, body.name);
     schedule.upsert(&mut tx).await?;
 
     for (slot, mut subjects) in availability.sorted_by_flexibility(&mut tx).await? {
@@ -57,7 +59,8 @@ pub async fn generate(
 
     Ok(Json(GenerateResponse {
         id: schedule.id,
-        parent: parent_id,
+        parent: schedule.parent,
+        name: schedule.name,
     }))
 }
 

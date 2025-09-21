@@ -34,7 +34,7 @@ app.get("/", async (req, res) => {
 
   availabilitiesResult?.data?.sort(
     (a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   );
 
   res.render("index", {
@@ -72,14 +72,16 @@ app.get("/schedule/:id", async (req, res) => {
   res.render("schedule", {
     schedule: scheduleResult.data,
     scheduleId: req.params.id,
-    assignments: sortedData(assignments, slots),
+    assignments: sortedData(assignments, slots).map((a) =>
+      a.data.map((k) => k.name ?? k.tag),
+    ),
   });
 });
 
 app.get("/availability/:id", async (req, res) => {
   const slotsResult = await api<Slots>(`/slots`);
   const availabilityResult = await api<Availability>(
-    `/availability/${req.params.id}`
+    `/availability/${req.params.id}`,
   );
 
   if (!slotsResult.success) {
@@ -104,7 +106,7 @@ app.get("/availability/:id", async (req, res) => {
     availabilityId: req.params.id,
     entries: sortedData(entries, slots).map((k) => ({
       id: k.id,
-      data: k.data.map((l) => l.name),
+      data: k.data.map((l) => l.name ?? l.tag),
     })),
   });
 });
@@ -123,6 +125,7 @@ app.post("/schedule/generate", async (req, res) => {
   const parentId = req.body.parent || null;
   const result = await api<GenerateResponse>("/schedule/generate", "POST", {
     parent: parentId,
+    name: null,
   });
 
   if (result.success) {
@@ -164,9 +167,9 @@ app.listen(PORT, () => {
 });
 
 function sortedData(
-  data: Record<string, { id: string; name: string }[]>,
-  slots: { id: string; w2m_id: number }[]
-): { id: string; data: { id: string; name: string }[] }[] {
+  data: Record<string, { id: string; tag: string; name?: string }[]>,
+  slots: { id: string; w2m_id: number }[],
+): { id: string; data: { id: string; tag: string; name?: string }[] }[] {
   const map: Record<string, number> = {};
   slots.forEach((slot) => (map[slot.id] = slot.w2m_id));
 

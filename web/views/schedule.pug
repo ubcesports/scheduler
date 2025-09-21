@@ -6,15 +6,15 @@ block content
   .schedule-info
     if schedule.parent
       span
-        strong Parent: 
+        strong Parent:
         a(href=`/schedule/${schedule.parent}`) #{schedule.parent}
     else
       span
-        strong Parent: 
+        strong Parent:
         | #[i Root Schedule]
     br
 
-    strong Child: 
+    strong Child:
     span !{'['}
     a(href=`/generate?parent=${schedule.id}`) Generate Schedule
     span !{'] '}
@@ -30,19 +30,19 @@ block content
 
   .schedule-details
     h3 Schedule Details
-    
-    table 
-      tbody 
+
+    table
+      tbody
         each i in [0, 1, 2, 3, 4]
-          tr 
-            td #{assignments[i].data[0].name}
-            td #{assignments[5 + i].data[0].name}
-            td #{assignments[10 + i].data[0].name}
-            td #{assignments[15 + i].data[0].name}
-            td #{assignments[20 + i].data[0].name}
-          tr 
-            td #{assignments[i].data[1].name}
-            td #{assignments[5 + i].data[1].name}
-            td #{assignments[10 + i].data[1].name}
-            td #{assignments[15 + i].data[1].name}
-            td #{assignments[20 + i].data[1].name}
+          tr
+            td #{assignments[i][0]}
+            td #{assignments[5 + i][0]}
+            td #{assignments[10 + i][0]}
+            td #{assignments[15 + i][0]}
+            td #{assignments[20 + i][0]}
+          tr
+            td #{assignments[i][1]}
+            td #{assignments[5 + i][1]}
+            td #{assignments[10 + i][1]}
+            td #{assignments[15 + i][1]}
+            td #{assignments[20 + i][1]}
