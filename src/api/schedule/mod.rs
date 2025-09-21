@@ -5,10 +5,10 @@ use axum::{
 
 use crate::Application;
 
+mod export;
 mod generate;
 mod schedule;
 mod schedules;
-mod export;
 
 pub fn create_router() -> Router<Application> {
     Router::new()

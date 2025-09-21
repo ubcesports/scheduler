@@ -1,9 +1,10 @@
 use axum::extract::{Path, Query, State};
 use axum::http::{HeaderMap, header};
 use axum::response::IntoResponse;
+use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use souvenir::Id;
-use crate::Application;
+use crate::{ApiError, Application};
 use std::fmt::Write;
 
 #[derive(Deserialize)]
@@ -37,28 +38,30 @@ pub async fn export(
 
     let assignments: Vec<SlotAssignment> = records
         .into_iter()
-        .filter_map(|row| {
-            Some(SlotAssignment {
-                slot_w2m_id: row.w2m_id?,
-                subject_name: row.name,
-            })
+        .map(|row| SlotAssignment {
+            slot_w2m_id: row.w2m_id.unwrap_or_default(),
+            subject_name: row.name,
         })
         .collect();
 
-    let format_type: Option<String> = query.format;
-    let formatted_assignments = match format_type.as_deref() {
-        Some("sheets-export") => build_csv(&assignments, true).await,
-        _ => build_csv(&assignments, false).await,
+    let format_type = query.format.unwrap_or_else(|| "default".to_string());
+    let formatted_assignments = match format_type.as_str() {
+        "default" => build_csv(&assignments, false),
+        "sheets-export" => build_csv(&assignments, true),
+        _ => return Err(ApiError {
+            status_code: StatusCode::BAD_REQUEST,
+            error: anyhow::anyhow!("Bad request: Invalid format parameter")
+        }),
     };
 
     let mut headers = HeaderMap::new();
     headers.insert(
         header::CONTENT_TYPE,
-        "text/plain; charset=utf-8".parse().unwrap(),
+        "text/csv; charset=utf-8".parse().unwrap(),
     );
     headers.insert(
         header::CONTENT_DISPOSITION,
-        format!("attachment; filename=\"schedule-{id}.txt\"")
+        format!("attachment; filename=\"schedule-{id}.csv\"")
             .parse()
             .unwrap(),
     );
@@ -66,20 +69,19 @@ pub async fn export(
     Ok((headers, formatted_assignments))
 }
 
-async fn build_csv(assignments: &[SlotAssignment], sheets_export: bool) -> String {
-    let slots_per_day = 5;
-    let mut output = String::with_capacity(assignments.len() * 32);
+fn build_csv(assignments: &[SlotAssignment], sheets_export: bool) -> String {
+    const SLOTS_PER_DAY: usize = 5;
 
     let mut days: Vec<Vec<(&str, &str)>> = vec![Vec::new(); 5];
 
     for (i, chunk) in assignments.chunks_exact(2).enumerate() {
-        let day = i / slots_per_day;
+        let day = i / SLOTS_PER_DAY;
         days[day].push((&chunk[0].subject_name, &chunk[1].subject_name));
     }
 
     let mut rows: Vec<Vec<String>> = Vec::new();
 
-    for slot_idx in 0..slots_per_day {
+    for slot_idx in 0.. SLOTS_PER_DAY {
         let mut row1 = Vec::with_capacity(5);
         let mut row2 = Vec::with_capacity(5);
 
@@ -98,6 +100,7 @@ async fn build_csv(assignments: &[SlotAssignment], sheets_export: bool) -> Strin
         }
     }
 
+    let mut output = String::with_capacity(assignments.len() * 32);
     for row in rows {
         let _ = writeln!(output, "{}", row.join(","));
     }
