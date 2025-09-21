@@ -17,12 +17,6 @@ pub struct SlotAssignment {
     pub subject_name: String,
 }
 
-#[derive(Serialize)]
-pub struct ApiResponse {
-    pub id: String,
-    pub assignments: Vec<SlotAssignment>,
-}
-
 pub async fn export(
     State(state): State<Application>,
     Path(id): Path<String>, 
