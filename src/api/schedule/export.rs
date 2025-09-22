@@ -1,15 +1,15 @@
+use crate::{ApiError, Application};
 use axum::extract::{Path, Query, State};
-use axum::http::{HeaderMap, header};
+use axum::http::{header, HeaderMap};
 use axum::response::IntoResponse;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use souvenir::Id;
-use crate::{ApiError, Application};
 use std::fmt::Write;
 
 #[derive(Deserialize)]
 pub struct ExportQuery {
-	format: Option<String>,
+    format: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -20,8 +20,8 @@ pub struct SlotAssignment {
 
 pub async fn export(
     State(state): State<Application>,
-    Path(id): Path<String>, 
-    Query(query): Query<ExportQuery>
+    Path(id): Path<String>,
+    Query(query): Query<ExportQuery>,
 ) -> Result<impl IntoResponse, crate::api::ApiError> {
     let records = sqlx::query!(
         r#"
@@ -48,10 +48,12 @@ pub async fn export(
     let formatted_assignments = match format_type.as_str() {
         "default" => build_csv(&assignments, false),
         "sheets-export" => build_csv(&assignments, true),
-        _ => return Err(ApiError {
-            status_code: StatusCode::BAD_REQUEST,
-            error: anyhow::anyhow!("Bad request: Invalid format parameter")
-        }),
+        _ => {
+            return Err(ApiError {
+                status_code: StatusCode::BAD_REQUEST,
+                error: anyhow::anyhow!("Bad request: Invalid format parameter"),
+            })
+        }
     };
 
     let mut headers = HeaderMap::new();
@@ -81,7 +83,7 @@ fn build_csv(assignments: &[SlotAssignment], sheets_export: bool) -> String {
 
     let mut rows: Vec<Vec<&str>> = Vec::new();
 
-    for slot_idx in 0.. SLOTS_PER_DAY {
+    for slot_idx in 0..SLOTS_PER_DAY {
         let mut row1 = Vec::with_capacity(5);
         let mut row2 = Vec::with_capacity(5);
 
@@ -105,5 +107,4 @@ fn build_csv(assignments: &[SlotAssignment], sheets_export: bool) -> String {
         let _ = writeln!(output, "{}", row.join(","));
     }
     output
-    
 }
