@@ -40,7 +40,7 @@ pub async fn export(
         .into_iter()
         .map(|row| SlotAssignment {
             slot_w2m_id: row.w2m_id.unwrap_or_default(),
-            subject_name: row.name,
+            subject_name: row.name.unwrap_or_else(|| "Unnamed".to_string()),
         })
         .collect();
 
@@ -79,7 +79,7 @@ fn build_csv(assignments: &[SlotAssignment], sheets_export: bool) -> String {
         days[day].push((&chunk[0].subject_name, &chunk[1].subject_name));
     }
 
-    let mut rows: Vec<Vec<String>> = Vec::new();
+    let mut rows: Vec<Vec<&str>> = Vec::new();
 
     for slot_idx in 0.. SLOTS_PER_DAY {
         let mut row1 = Vec::with_capacity(5);
@@ -87,8 +87,8 @@ fn build_csv(assignments: &[SlotAssignment], sheets_export: bool) -> String {
 
         for day in 0..5 {
             let (s1, s2) = days[day][slot_idx];
-            row1.push(s1.to_string());
-            row2.push(s2.to_string());
+            row1.push(s1);
+            row2.push(s2);
         }
 
         rows.push(row1);
