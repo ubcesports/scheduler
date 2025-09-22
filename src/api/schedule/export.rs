@@ -25,7 +25,7 @@ pub async fn export(
 ) -> Result<impl IntoResponse, crate::api::ApiError> {
     let records = sqlx::query!(
         r#"
-            SELECT slot.w2m_id, subject.name FROM schedule_assignment
+            SELECT slot.w2m_id, subject.name, subject.tag FROM schedule_assignment
                 INNER JOIN slot ON schedule_assignment.slot_id = slot.id
                 INNER JOIN subject ON schedule_assignment.subject_id = subject.id
                 WHERE schedule_assignment.schedule_id = $1
@@ -40,7 +40,7 @@ pub async fn export(
         .into_iter()
         .map(|row| SlotAssignment {
             slot_w2m_id: row.w2m_id.unwrap_or_default(),
-            subject_name: row.name.unwrap_or_else(|| "Unnamed".to_string()),
+            subject_name: row.name.unwrap_or_else(|| row.tag),
         })
         .collect();
 
