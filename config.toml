@@ -4,3 +4,6 @@ mode = "development"
 [http]
 listen.address = "0.0.0.0"
 listen.port = 5678
+
+[database]
+url = "postgres://postgres:admin@localhost/postgres"
