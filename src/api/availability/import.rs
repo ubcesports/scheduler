@@ -44,7 +44,16 @@ pub async fn import(
         });
     }
 
-    let page = reqwest::get(&body.source).await?.text().await?;
+    let page = reqwest::Client::builder()
+        .user_agent(concat!("scheduler/", env!("CARGO_PKG_VERSION")))
+        .build()?
+        .get(&body.source)
+        .send()
+        .await?
+        .error_for_status()?
+        .text()
+        .await?;
+    
     let mut tx = app.pool.begin().await?;
 
     let mut availability = Availability::new(id!(Availability), body.name);
@@ -138,7 +147,16 @@ pub async fn import(
         }
     }
 
-    // Update parameters with new availability
+    if entries_created == 0 {
+        return Err(ApiError {
+            status_code: StatusCode::UNPROCESSABLE_ENTITY,
+            error: anyhow::anyhow!(
+                "No qualifying availability entries found. Check the When2Meet URL, participant IDs, and full-hour availability."
+            ),
+        });
+    }
+
+    // Update parameters only after a nonempty import; errors roll back the transaction.
     sqlx::query!(
         "UPDATE parameters SET availability = $1;",
         availability.id as Id
